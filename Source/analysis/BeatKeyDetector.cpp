@@ -209,14 +209,27 @@ BeatKeyResult BeatKeyDetector::analyse (const float* mono, int numSamples, doubl
     result.gateSpread = (float) inScaleShare;
     result.gateBestR = best.r;
 
-    // Thresholds measured against the fixtures: clean loops score in-scale
-    // ~0.9, a produced groove with a pitch-swept 808 and a noise bed ~0.68;
-    // noise/percussion never produces surviving peaks at all (share 0).
-    result.reliable = best.r > 0.45f
-                       && peakShare > 0.10
+    // Thresholds set from MEASURED material, synthetic and real:
+    //
+    //                       peakShare  inScale  bestR  conf
+    //   real production A      0.63      0.68    0.43  0.26   must pass
+    //   real production B      0.58      0.73    0.68  0.38   must pass
+    //   drum loop              0.28      0.62    0.39  0.29   must fail
+    //   white noise            0.00      0.00    0.00  0.00   must fail
+    //   synthetic chord loops  0.87      0.90+   0.73+ 0.5+    must pass
+    //
+    // peakShare - the share of spectral energy sitting in resolved peaks -
+    // is the discriminator that actually separates pitched music from
+    // percussion (2x margin). bestR and confidence do NOT: a drum loop can
+    // out-correlate a real production on both, because a sparse chroma
+    // matches some template well. The original gates were calibrated on
+    // clean synthetic chords only, and would have shown NO RELIABLE KEY on a
+    // real record whose key it had detected correctly.
+    result.reliable = peakShare > 0.45
                        && inScaleShare > 0.62
+                       && best.r > 0.35f
                        && spread > 0.25
-                       && result.confidence > 0.30f;
+                       && result.confidence > 0.20f;
 
     for (size_t i = 1; i < scored.size() && result.alternatives.size() < 3; ++i)
     {

@@ -695,7 +695,12 @@ int main (int argc, char** argv)
         // async path a dropped file takes, and the artist profile is the one
         // the range test would build. Waiting here rather than mid-render
         // keeps the timeline honest about what is on screen when.
-        processor.analyseFileAsync (fixtures.beat);
+        //
+        // When a real beat is supplied it is what gets analysed - the film
+        // must show KeyGlo reading the music the viewer is hearing, not a
+        // synthetic stand-in with a different key.
+        const juce::File beatForAnalysis = haveMusic ? sourceAudio : fixtures.beat;
+        processor.analyseFileAsync (beatForAnalysis);
         for (int i = 0; i < 400; ++i)
         {
             auto snap = processor.getDisplayModel().get();
@@ -751,12 +756,12 @@ int main (int argc, char** argv)
 
             { 11.0, 21.0, "Drop the beat",
               "Key, scale, tempo and tuning - read from the audio",
-              [&fixtures] (KeyGloProcessor& p, KeyGloEditor&, double progress)
+              [&beatForAnalysis] (KeyGloProcessor& p, KeyGloEditor&, double progress)
               {
                   // Re-analysing on screen shows the ANALYZING state resolve
                   // into a real verdict rather than cutting to a finished one.
                   if (progress < 0.02)
-                      p.analyseFileAsync (fixtures.beat);
+                      p.analyseFileAsync (beatForAnalysis);
               } },
 
             { 21.0, 29.0, "No reliable key beats a wrong one",
@@ -805,10 +810,10 @@ int main (int argc, char** argv)
 
             { 3.2, 10.5, "What key is this beat?",
               "Drop it in. Read it in seconds.",
-              [&fixtures] (KeyGloProcessor& p, KeyGloEditor&, double progress)
+              [&beatForAnalysis] (KeyGloProcessor& p, KeyGloEditor&, double progress)
               {
                   if (progress < 0.03)
-                      p.analyseFileAsync (fixtures.beat);
+                      p.analyseFileAsync (beatForAnalysis);
               },
               { 15.0f, 91.0f, 360.0f, 460.0f } },          // beat panel
 

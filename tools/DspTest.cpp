@@ -496,6 +496,61 @@ int main()
     }
 
     {
+        // A DRUM LOOP: kick, snare, closed hats. Percussive and rhythmic but
+        // with no sustained pitched content - the material the "No Reliable
+        // Key" answer exists for. This fixture guards the key gates: they are
+        // set from real-music measurements (a real production scored bestR
+        // 0.43 while a synthetic chord loop scores 0.9), and loosening them
+        // must never let percussion claim a key.
+        juce::Random rng (0xd7u);
+        const double sr = 48000.0;
+        const int n = (int) (sr * 10.0);
+        std::vector<float> drums ((size_t) n, 0.0f);
+        const double beatLen = 60.0 / 140.0;
+        double kickPhase = 0.0;
+        for (int i = 0; i < n; ++i)
+        {
+            const double t = i / sr;
+            const double inBeat = std::fmod (t, beatLen);
+            const double inBar = std::fmod (t, beatLen * 4.0);
+
+            // Kick on 1 and 3: a short pitch-swept sine, as inharmonic in
+            // aggregate as a real kick.
+            float v = 0.0f;
+            if (inBar < 0.25 || (inBar >= beatLen * 2.0 && inBar < beatLen * 2.0 + 0.25))
+            {
+                const double kt = std::fmod (inBar, beatLen * 2.0);
+                kickPhase += juce::MathConstants<double>::twoPi
+                               * (55.0 + 90.0 * std::exp (-kt / 0.02)) / sr;
+                v += 0.9f * (float) (std::exp (-kt / 0.06) * std::sin (kickPhase));
+            }
+            // Snare on 2 and 4: filtered noise burst.
+            const double sn = std::fmod (inBar + beatLen * 3.0, beatLen * 2.0);
+            if (sn < 0.2)
+                v += 0.5f * (float) std::exp (-sn / 0.05) * (rng.nextFloat() * 2.0f - 1.0f);
+            // Hats on eighths.
+            const double ht = std::fmod (t, beatLen * 0.5);
+            if (ht < 0.03)
+                v += 0.18f * (float) std::exp (-ht / 0.008) * (rng.nextFloat() * 2.0f - 1.0f);
+
+            drums[(size_t) i] = juce::jlimit (-1.0f, 1.0f, v);
+        }
+
+        const auto r = BeatKeyDetector::analyse (drums.data(), n, sr);
+        std::printf ("        [drum-loop gates: peakShare %.3f inScale %.2f bestR %.2f conf %.2f]\n",
+                     r.gatePeakShare, r.gateSpread, r.gateBestR, r.confidence);
+        check (! r.reliable,
+               "drum loop: no reliable key (peakShare " + juce::String (r.gatePeakShare, 3)
+                 + ", inScale " + juce::String (r.gateSpread, 2)
+                 + ", bestR " + juce::String (r.gateBestR, 2)
+                 + ", conf " + juce::String (r.confidence, 2) + ")");
+
+        const auto t2 = TempoDetector::analyse (drums.data(), n, sr);
+        check (t2.reliable && std::abs (t2.bpm - 140.0f) < 3.0f,
+               "drum loop tempo is 140 (got " + juce::String (t2.bpm, 1) + ")");
+    }
+
+    {
         // Noise + clicks have no key. Honesty gate: reliable must be false.
         juce::Random rng (0x4b47);
         std::vector<float> noise ((size_t) (44100 * 8), 0.0f);

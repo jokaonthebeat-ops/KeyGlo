@@ -217,7 +217,7 @@ CONFIG_STAMP := $(DIST)/.config-$(CONFIG_TAG)
 # -----------------------------------------------------------------------------
 
 .PHONY: all vst3 au standalone install universal clean distclean release \
-        juceobjs syntax uishot dsptest test sanitize installer notarize icon video reel video reel assets
+        juceobjs syntax uishot dsptest test sanitize installer notarize icon video reel assets analyse
 
 all: vst3 au standalone
 
@@ -518,6 +518,17 @@ assets:
 
 # The vertical cut is not built yet - the landscape film is the deliverable.
 # Left out deliberately rather than shipping a target that renders nothing.
+
+$(TOOLS)/analyse: $(PLUG_OBJS) $(ROOT)/tools/AnalyseFile.cpp $(ROOT)/JucePluginDefines.h
+	@mkdir -p $(TOOLS)
+	@echo "  CXX [tools]      AnalyseFile.cpp"
+	@$(CXX) $(CXXFLAGS) -DJUCE_STANDALONE_APPLICATION=0 -DJucePlugin_Build_Standalone=0 \
+	   -c $(ROOT)/tools/AnalyseFile.cpp -o $(TOOLS)/AnalyseFile.o
+	@$(CXX) $(PLUG_OBJS) $(TOOLS)/AnalyseFile.o $(LDFLAGS_BASE) -o $@
+
+# Ground-truth check against real music: make analyse ARGS="beat.wav ..."
+analyse: $(TOOLS)/analyse
+	@$(TOOLS)/analyse $(ARGS)
 
 $(TOOLS)/vst3probe: $(ROOT)/tools/VST3Probe.cpp
 	@mkdir -p $(TOOLS)
