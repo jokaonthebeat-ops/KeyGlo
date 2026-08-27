@@ -13,10 +13,14 @@ Regenerate everything with `make video`, `make reel` and
 
 | File | Use |
 |---|---|
-| `KeyGlo-demo.mp4` | 1920×1080, ~92 s. Product page, YouTube, plugin directories. |
-| `KeyGlo-demo-web.mp4` | Same film at a web bitrate. Embeds. |
-| `KeyGlo-reel.mp4` | 1080×1920, ~42 s. Reels / Shorts / TikTok. |
-| `KeyGlo-reel-web.mp4` | Reel at a web bitrate. |
+| `KeyGlo-demo.mp4` | 1920×1080, 92 s, 74 MB. Product page, YouTube, plugin directories. |
+| `KeyGlo-demo-web.mp4` | Same film at 5 Mbps, 55 MB. Embeds. |
+| `KeyGlo-reel.mp4` | 1080×1920, 42 s, 31 MB. Reels / Shorts / TikTok. |
+| `KeyGlo-reel-web.mp4` | Reel at 5 Mbps, 23 MB. |
+
+The films are **not tracked in git** — they are build products, and 105 MB
+of regenerable video does not belong in a repo. Rebuild with `make video`
+and `make reel` (about 4 and 2 minutes).
 
 **The films are silent on purpose.** A fabricated song under a product
 video is worse than none, and the fixtures are synthesised test signals —
