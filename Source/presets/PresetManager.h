@@ -10,14 +10,14 @@
     compared against the live parameters - no listener ordering to get
     wrong (the EQGlo trap).
 
-    User presets are small JSON files under
-    ~/Library/Application Support/Diamond Loopz/KeyGlo/Presets/User;
-    `dirOverride()` sandboxes tests. Names are sanitised to their file form
+    User presets are small JSON files under the platform data folder
+    (see AppPaths.h); `dirOverride()` sandboxes tests. Names are sanitised to their file form
     so a preset cannot escape the folder.
 */
 
 #pragma once
 #include <JuceHeader.h>
+#include "../state/AppPaths.h"
 #include <map>
 #include <vector>
 
@@ -153,8 +153,7 @@ public:
     {
         if (dirOverride() != juce::File())
             return dirOverride();
-        return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-                 .getChildFile ("Application Support/Diamond Loopz/KeyGlo/Presets/User");
+        return AppPaths::presetsDirectory();
     }
 
     static juce::File fileFor (const juce::String& name)

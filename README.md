@@ -25,6 +25,33 @@ control in the interface runs on real analysis or real state.
 installer → notarisation (needs Apple credentials), and a human listen in a
 real DAW.
 
+## Windows
+
+Windows binaries cannot be produced on the macOS development machine — a
+Windows VST3 is a PE DLL and needs MSVC. They are built by
+`.github/workflows/windows.yml` on a GitHub runner, gated on **pluginval**
+strictness 5 (the Windows counterpart of the macOS `auval` check) and on an
+artwork-presence check, because a bundle that ships without its `Assets`
+folder opens with every control blank.
+
+- **Push to `main`** → builds and validates, leaving the ZIP as a workflow
+  artifact.
+- **Push a `v*` tag** → same, plus a **GitHub Release** with the ZIP attached.
+
+```bash
+git tag v0.9.5 && git push origin v0.9.5
+```
+
+The Windows ZIP is manual-install only (VST3 folder + standalone `.exe`
+with its `Assets`). These binaries are **not** code-signed for Windows —
+that certificate is a separate purchase and KeyGlo is free — so no unsigned
+installer is shipped; copying a `.vst3` folder into place triggers no
+SmartScreen prompt, whereas an unsigned installer would.
+
+`CMakeLists.txt` is the portable build used for that. It is not the macOS
+path: the hand-written `Makefile` remains primary there because it knows
+about bundles, codesigning and the `.pkg`.
+
 ## Building (macOS, this machine)
 
 Hand-rolled Makefile, same toolchain as SourceGlo/MasterGlo (CLT only, no

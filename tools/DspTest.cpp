@@ -19,6 +19,7 @@
 #include "analysis/HookFitScorer.h"
 #include "analysis/SamplePitchDetector.h"
 #include "state/ArtistProfileStore.h"
+#include "state/AppPaths.h"
 #include "dsp/PreviewPitchShifter.h"
 #include "presets/PresetManager.h"
 #include "ui/AutoTuneSetupPanel.h"
@@ -1604,6 +1605,38 @@ int main()
         p.getPresets().resyncUndoBaseline();
         checkNear (p.getAPVTS().getRawParameterValue (pid::keySense)->load(),
                    0.2, 1.0e-3, "a preset load is one undoable step");
+    }
+
+    // --- user data lives in ONE place, correct for the platform -------------
+    {
+        // Presets and profiles must sit under the same KeyGlo folder. They
+        // once did not: profiles landed in ~/Library/Diamond Loopz while
+        // presets used ~/Library/Application Support/Diamond Loopz, and the
+        // shipped Read Me documented only the second. Nothing failed - the
+        // data was just somewhere the user was never told about.
+        PresetManager::dirOverride() = juce::File();
+        ArtistProfileStore::dirOverride() = juce::File();
+
+        const auto root = AppPaths::dataDirectory();
+        check (PresetManager::userDir().isAChildOf (root),
+               "presets live under the KeyGlo data folder");
+        check (ArtistProfileStore::directory().isAChildOf (root),
+               "profiles live under the SAME KeyGlo data folder");
+        check (root.getFileName() == "KeyGlo"
+                 && root.getParentDirectory().getFileName() == "Diamond Loopz",
+               "data folder is .../Diamond Loopz/KeyGlo (got "
+                 + root.getFullPathName() + ")");
+
+       #if JUCE_MAC
+        check (root.getFullPathName().contains ("Application Support"),
+               "macOS: inside Application Support");
+       #else
+        check (! root.getFullPathName().contains ("Application Support"),
+               "non-macOS: no bogus 'Application Support' segment");
+       #endif
+
+        // Restore the sandbox for the remaining preset tests.
+        PresetManager::dirOverride() = presetSandbox;
     }
 
     // --- MIDI scale export --------------------------------------------------

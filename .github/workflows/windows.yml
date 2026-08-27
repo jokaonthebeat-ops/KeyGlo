@@ -1,0 +1,218 @@
+# =============================================================================
+#  Builds the Windows VST3 and standalone on a GitHub-hosted Windows runner,
+#  and publishes them to a GitHub Release when a v* tag is pushed.
+#
+#  This exists because a Windows VST3 is a PE DLL and must be compiled by MSVC
+#  on Windows; it cannot be produced from the macOS development machine at all.
+#
+#  The build is gated on pluginval, which is the Windows counterpart of the
+#  `auval` check the macOS release runs.
+# =============================================================================
+
+name: Windows
+
+on:
+  workflow_dispatch:          # run it by hand from the Actions tab
+  push:
+    branches: [main, master]
+    tags: ['v*']              # a v* tag also publishes a Release
+
+permissions:
+  contents: write             # required to create the Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The generator is discovered rather than hardcoded. Pinning
+      # "Visual Studio 17 2022" breaks the moment the runner image moves to a
+      # newer Visual Studio - the compiler is still there, only the name changed.
+      - name: Find Visual Studio
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) { throw "vswhere not found - no Visual Studio on this runner" }
+
+          $vs = & $vswhere -latest -products * `
+                  -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+                  -property catalog_productLineVersion
+          if (-not $vs) { throw "no Visual Studio with the C++ toolset installed" }
+
+          Write-Host "Visual Studio $vs"
+          $gen = switch ($vs) {
+            "2022" { "Visual Studio 17 2022" }
+            "2026" { "Visual Studio 18 2026" }
+            default { "" }
+          }
+          echo "VS_GENERATOR=$gen" >> $env:GITHUB_ENV
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          if ($env:VS_GENERATOR) {
+            cmake -B build-cmake -G "$env:VS_GENERATOR" -A x64
+          } else {
+            Write-Host "Unrecognised Visual Studio version - using CMake's default generator"
+            cmake -B build-cmake -A x64
+          }
+
+      - name: Build
+        run: cmake --build build-cmake --config Release --parallel
+
+      - name: Locate artefacts
+        shell: pwsh
+        run: |
+          $vst3 = Get-ChildItem -Recurse -Filter "KeyGlo.vst3" build-cmake |
+                  Select-Object -First 1
+          if (-not $vst3) { throw "VST3 not found - the build produced nothing" }
+          echo "VST3_PATH=$($vst3.FullName)" >> $env:GITHUB_ENV
+          Write-Host "VST3: $($vst3.FullName)"
+
+      # The artwork lives inside the bundle at Contents/Resources/Assets. If the
+      # POST_BUILD copy ever lands somewhere else, every control falls back to a
+      # flat stand-in - and a screenshot is the only way anyone would notice.
+      # The Drum King once shipped a Windows VST3 with no artwork at all, so
+      # this is checked here rather than trusted.
+      - name: Check the artwork shipped
+        shell: pwsh
+        run: |
+          $shell = Join-Path $env:VST3_PATH "Contents\Resources\Assets\Base\keyglo_shell_1491x1055.png"
+          if (-not (Test-Path $shell)) {
+            Get-ChildItem -Recurse $env:VST3_PATH | Select-Object -First 40 |
+              ForEach-Object { Write-Host $_.FullName }
+            throw "artwork missing from the VST3 bundle"
+          }
+          $count = (Get-ChildItem -Recurse -File (Join-Path $env:VST3_PATH "Contents\Resources\Assets")).Count
+          Write-Host "artwork present: $count files"
+          if ($count -lt 200) { throw "only $count asset files - expected ~216" }
+
+      # pluginval instantiates the plugin, sweeps parameters, renders audio at
+      # several sample rates and buffer sizes, and checks state round-trips.
+      # Level 5 is the gate - what most commercial plugins target and what a DAW
+      # actually exercises. Level 8 runs afterwards for information only.
+      #
+      # Neither pass uses --validate-in-process: out-of-process, a crash in the
+      # child is reported with the test that caused it instead of killing the
+      # runner silently.
+      - name: Fetch pluginval
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/Tracktion/pluginval/releases/download/v1.0.3/pluginval_Windows.zip" -OutFile pluginval.zip
+          Expand-Archive pluginval.zip -DestinationPath pluginval
+          $exe = Get-ChildItem -Recurse -Filter "pluginval.exe" pluginval | Select-Object -First 1
+          echo "PLUGINVAL=$($exe.FullName)" >> $env:GITHUB_ENV
+
+      # pluginval's progress logging drowns its verdict, and PowerShell prints
+      # the throw wherever stderr happens to interleave - which is not where the
+      # failure occurred. Capture the run and print only what matters.
+      - name: Validate (strictness 5, blocking)
+        shell: pwsh
+        run: |
+          & "$env:PLUGINVAL" --strictness-level 5 --timeout-ms 300000 "$env:VST3_PATH" 2>&1 |
+            Tee-Object -FilePath pluginval-5.log
+          $code = $LASTEXITCODE
+
+          Write-Host "`n================ VERDICT (exit $code) ================"
+          Select-String -Path pluginval-5.log -Pattern "FAIL|fail|\*\*\*|assert|Error|error" |
+            ForEach-Object { Write-Host $_.Line }
+          Write-Host "================ last 25 lines ================"
+          Get-Content pluginval-5.log -Tail 25
+
+          if ($code -ne 0) { throw "pluginval failed at strictness 5 (see verdict above)" }
+
+      - name: Validate (strictness 8, informational)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          & "$env:PLUGINVAL" --strictness-level 8 --timeout-ms 300000 "$env:VST3_PATH" 2>&1 |
+            Tee-Object -FilePath pluginval-8.log
+          Write-Host "`n================ VERDICT (exit $LASTEXITCODE) ================"
+          Get-Content pluginval-8.log -Tail 25
+
+      - name: Upload pluginval logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pluginval-logs
+          path: pluginval-*.log
+
+      # Manual install only. These binaries are NOT code-signed for Windows -
+      # a Windows certificate is a separate purchase and KeyGlo is free - so
+      # shipping an unsigned .exe installer would put a SmartScreen wall in
+      # front of every user. Copying a .vst3 folder into place triggers nothing.
+      - name: Assemble distribution ZIP
+        shell: pwsh
+        run: |
+          # Every error is fatal. A green run with no deliverable is worse than
+          # a red one.
+          $ErrorActionPreference = 'Stop'
+          $stage = "dist-zip\KeyGlo"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+
+          Copy-Item -Recurse "$env:VST3_PATH" $stage
+
+          $exe = Get-ChildItem -Recurse -Filter "KeyGlo.exe" build-cmake |
+                 Select-Object -First 1
+          if (-not $exe) { throw "standalone .exe not found" }
+          Copy-Item $exe.FullName $stage
+          # The standalone has no bundle, so its artwork sits beside the .exe.
+          $assets = Join-Path $exe.DirectoryName "Assets"
+          if (-not (Test-Path $assets)) {
+            throw "standalone artwork missing - the .exe would open with no interface art"
+          }
+          Copy-Item -Recurse $assets "$stage\Assets"
+
+          Copy-Item packaging\windows\INSTALL.txt "$stage\INSTALL.txt"
+          Copy-Item packaging\windows\license.txt "$stage\License.txt"
+
+          # Tag builds carry the tag's version; branch builds are "dev".
+          # (Written as if/else rather than a ternary - that operator needs
+          # PowerShell 7 and this should not depend on the runner image.)
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $version = "${{ github.ref_name }}".TrimStart("v")
+          } else {
+            $version = "dev"
+          }
+          $zip = "KeyGlo-$version-Windows.zip"
+          Compress-Archive -Path $stage -DestinationPath $zip -Force
+          echo "DIST_ZIP=$zip" >> $env:GITHUB_ENV
+
+          Write-Host "--- ZIP contents ---"
+          Get-ChildItem -Recurse $stage | ForEach-Object { $_.FullName.Replace((Get-Location).Path, "") }
+
+      - name: Upload distribution ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeyGlo-Windows-DISTRIBUTE-THIS
+          path: ${{ env.DIST_ZIP }}
+          if-no-files-found: error
+
+      # Only a v* tag publishes. A branch push just leaves the artifact above,
+      # so ordinary commits never create half-finished Releases.
+      - name: Publish to GitHub Releases
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.DIST_ZIP }}
+          name: KeyGlo ${{ github.ref_name }}
+          body: |
+            **KeyGlo ${{ github.ref_name }} — Windows**
+
+            VST3 and standalone, x64, built and validated on a Windows runner
+            (pluginval strictness 5).
+
+            Unzip and read `INSTALL.txt`. In short: copy `KeyGlo.vst3` into
+            `C:\Program Files\Common Files\VST3`, and keep `KeyGlo.exe`
+            together with its `Assets` folder.
+
+            These binaries are not code-signed for Windows, so the standalone
+            may show a SmartScreen prompt (More info → Run anyway). The VST3
+            route shows nothing.
+
+            The macOS build is a separate signed and notarised installer.
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}

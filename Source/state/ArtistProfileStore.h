@@ -9,6 +9,7 @@
 
 #pragma once
 #include <JuceHeader.h>
+#include "AppPaths.h"
 #include "../analysis/VocalRangeProfiler.h"
 
 namespace keyglo
@@ -27,8 +28,7 @@ public:
     {
         if (dirOverride() != juce::File())
             return dirOverride();
-        return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-                 .getChildFile ("Diamond Loopz").getChildFile ("KeyGlo").getChildFile ("Profiles");
+        return AppPaths::profilesDirectory();
     }
 
     static juce::File fileFor (const juce::String& name)

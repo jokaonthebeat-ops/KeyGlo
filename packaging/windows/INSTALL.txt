@@ -1,0 +1,117 @@
+KeyGlo 0.9.5 for Windows
+Artist-to-Beat Key Matching
+Diamond Loopz
+
+===============================================================
+INSTALLING
+===============================================================
+
+VST3 PLUGIN
+
+  Copy the folder
+
+    KeyGlo.vst3
+
+  into
+
+    C:\Program Files\Common Files\VST3
+
+  That is the standard location every VST3 host scans. You will
+  need to confirm an administrator prompt to write there.
+
+  Then rescan plug-ins in your DAW:
+    Ableton Live   Preferences > Plug-Ins > Rescan
+    FL Studio      Options > Manage plugins > Find installed
+    Studio One     Options > Locations > VST Plug-Ins > Reset
+    REAPER         Preferences > VST > Re-scan
+    Cubase         Studio > VST Plug-in Manager > Update
+
+STANDALONE APPLICATION
+
+  Keep KeyGlo.exe and the Assets folder TOGETHER, wherever you
+  put them. The application reads its interface artwork from
+  that folder -- move the .exe on its own and the interface will
+  come up wrong.
+
+  Right-click KeyGlo.exe > Send to > Desktop for a shortcut.
+
+===============================================================
+ABOUT THE SMARTSCREEN WARNING
+===============================================================
+
+These files are NOT code-signed for Windows. A Windows code
+signing certificate is a separate purchase from the Apple one,
+and KeyGlo is free.
+
+Copying the .vst3 folder into place does not trigger any
+warning. Running the standalone .exe may show
+
+  "Windows protected your PC"
+
+Click "More info" then "Run anyway". This appears for any
+unsigned application; it is not a report of anything found in
+the file.
+
+If you would rather not, use the VST3 in your DAW instead --
+that route never shows the prompt.
+
+===============================================================
+GETTING STARTED
+===============================================================
+
+1. BEAT
+   Drag a beat onto the Beat Analysis panel and KeyGlo reads its
+   key, scale, BPM and tuning offset. Or play your session and
+   press the small refresh arrow to analyse what it hears.
+
+   Pure drums or noise reads NO RELIABLE KEY rather than a
+   guess.
+
+2. ARTIST
+   Press START RANGE TEST and sing the four prompts: lowest
+   comfortable note, centre, highest comfortable, and optionally
+   falsetto. Each step waits for you. SAVE PROFILE keeps it.
+
+3. FIT
+   Sing over the beat. ARTIST FIT, RANGE FIT and HOOK MATCH
+   score how the hook sits in that voice against that beat, and
+   KeyGlo recommends a transposition.
+
+   The recommendation shows as a gold BEST badge. Nothing is
+   applied until you click a transpose button.
+
+4. 808s AND SAMPLES
+   Drop an 808 or one-shot on the 808 / Sample Tune panel for
+   its true sustain note, how many cents off it is, and a
+   recommendation matched to your beat's scale.
+
+   SOLO auditions the tuned version. APPLY TUNE writes a tuned
+   copy next to the original -- your source file is never
+   modified.
+
+5. AUTO-TUNE SETUP
+   Shows the key, scale and allowed notes to enter into your
+   pitch-correction plug-in. COPY SCALE copies it as text; DRAG
+   that button into your DAW to drop a one-octave MIDI scale
+   file.
+
+===============================================================
+YOUR DATA
+===============================================================
+
+Everything runs locally. KeyGlo does not upload your audio,
+require an account, or contact any server.
+
+Artist profiles and user presets are small files in
+
+  %APPDATA%\Diamond Loopz\KeyGlo
+
+containing settings only -- never recorded audio.
+
+===============================================================
+FREE
+===============================================================
+
+No trial timer. No locked features. No watermark. No account.
+
+Analysis results are suggestions, not verdicts. Trust your ears.
