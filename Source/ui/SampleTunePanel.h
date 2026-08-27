@@ -61,6 +61,29 @@ public:
         const bool inTune = std::abs (shownCents) <= 5.0f;
         const float radius = r.getWidth() * 0.5f;
 
+        // Decorative gold sweep over the dial's upper arc with a glowing tip,
+        // as the approved mockup draws it.
+        {
+            juce::Path sweep;
+            const float sr = radius * 0.88f;
+            const float a0 = juce::degreesToRadians (-155.0f) + juce::MathConstants<float>::halfPi;
+            const float a1 = juce::degreesToRadians (20.0f) + juce::MathConstants<float>::halfPi;
+            sweep.addCentredArc (centre.x, centre.y, sr, sr, 0.0f, a0, a1, true);
+            g.setColour (tokens::gold.withAlpha (0.85f));
+            g.strokePath (sweep, juce::PathStrokeType (2.6f, juce::PathStrokeType::curved,
+                                                       juce::PathStrokeType::rounded));
+
+            auto glow = Assets::particleGlow (Accent::gold);
+            if (glow.isValid())
+            {
+                const float tx = centre.x + std::cos (juce::degreesToRadians (20.0f)) * sr;
+                const float ty = centre.y + std::sin (juce::degreesToRadians (20.0f)) * sr;
+                g.setColour (juce::Colours::white);
+                g.drawImage (glow, { tx - 9.0f, ty - 9.0f, 18.0f, 18.0f },
+                             juce::RectanglePlacement::stretchToFit);
+            }
+        }
+
         // Gold rim intensifies when in tune.
         if (inTune)
         {
@@ -113,8 +136,8 @@ public:
 
         applyButton.setLabel ("APPLY TUNE");
         applyButton.setFontHeight (13.0f);
-        applyButton.setLabelColour (tokens::bg0.brighter (0.05f));
-        applyButton.setIconTint (tokens::bg0.brighter (0.05f));
+        applyButton.setLabelColour (tokens::gold);
+        applyButton.setIconTint (tokens::gold);
         applyButton.setAccent (tokens::gold);
         addAndMakeVisible (applyButton);
 
@@ -219,12 +242,14 @@ private:
             { "FINE TUNE", (ft > 0 ? "+" : "") + juce::String (ft), "CENTS" },
         };
 
+        // The first cell is wider in the mockup - its label is the long one.
         const int gap = 6;
-        const int cellW = (r.getWidth() - 2 * gap) / 3;
+        const int widths[3] = { 146, 111, 114 };
+        int cellX = r.getX();
         for (int i = 0; i < 3; ++i)
         {
-            const juce::Rectangle<int> cell (r.getX() + i * (cellW + gap), r.getY(),
-                                             cellW, r.getHeight());
+            const juce::Rectangle<int> cell (cellX, r.getY(), widths[i], r.getHeight());
+            cellX += widths[i] + gap;
             auto art = Assets::readoutCell (Accent::gold);
             if (art.isValid())
             {
@@ -244,9 +269,13 @@ private:
                         juce::Justification::centredLeft);
 
             g.setColour (tokens::gold);
-            g.setFont (Fonts::make (24.0f, false, true));
-            const int bigW = cells[i].small.isEmpty() ? content.getWidth()
-                                                      : juce::jmin (56, content.getWidth());
+            const auto bigFont = Fonts::make (24.0f, false, true);
+            g.setFont (bigFont);
+            const int bigW = cells[i].small.isEmpty()
+                ? content.getWidth()
+                : juce::jmin (content.getWidth(),
+                              6 + (int) std::ceil (juce::GlyphArrangement::getStringWidth (
+                                       bigFont, cells[i].big)));
             g.drawText (cells[i].big, content.removeFromLeft (bigW),
                         juce::Justification::centredLeft);
 

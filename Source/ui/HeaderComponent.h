@@ -60,11 +60,11 @@ public:
         prevButton.setBounds (local (layout::presetPrev));
         nextButton.setBounds (local (layout::presetNext));
 
-        saveButton.setBounds     (local ({ 1042, 22, 58, 52 }));
-        settingsButton.setBounds (local ({ 1112, 22, 60, 52 }));
-        helpButton.setBounds     (local ({ 1186, 22, 58, 52 }));
-        undoButton.setBounds     (local ({ 1284, 22, 52, 52 }));
-        redoButton.setBounds     (local ({ 1340, 22, 52, 52 }));
+        saveButton.setBounds     (local ({ 1050, 22, 58, 52 }));
+        settingsButton.setBounds (local ({ 1120, 22, 60, 52 }));
+        helpButton.setBounds     (local ({ 1194, 22, 58, 52 }));
+        undoButton.setBounds     (local ({ 1290, 22, 52, 52 }));
+        redoButton.setBounds     (local ({ 1346, 22, 52, 52 }));
         powerButton.setBounds    (local ({ 1420, 21, 46, 46 }));
     }
 
@@ -124,8 +124,8 @@ public:
 
         // --- dividers between utility groups ------------------------------
         g.setColour (tokens::stroke);
-        g.fillRect (local ({ 1264, 30, 1, 36 }));
-        g.fillRect (local ({ 1400, 30, 1, 36 }));
+        g.fillRect (local ({ 1272, 30, 1, 36 }));
+        g.fillRect (local ({ 1406, 30, 1, 36 }));
     }
 
 private:
@@ -140,13 +140,21 @@ private:
         {
             SkinButton::paintButton (g, over, down);
 
+            const auto tint = over || down ? tokens::white : tokens::text;
+            if (auto* ic = Assets::icon (forward ? "chevron_right" : "chevron_left", tint))
+            {
+                ic->drawWithin (g, getLocalBounds().withSizeKeepingCentre (16, 16).toFloat(),
+                                juce::RectanglePlacement::centred, 1.0f);
+                return;
+            }
+
             const auto c = getLocalBounds().getCentre().toFloat();
             juce::Path p;
             const float d = forward ? 1.0f : -1.0f;
             p.startNewSubPath (c.x - 4.0f * d, c.y - 7.0f);
             p.lineTo (c.x + 4.0f * d, c.y);
             p.lineTo (c.x - 4.0f * d, c.y + 7.0f);
-            g.setColour (over || down ? tokens::white : tokens::text);
+            g.setColour (tint);
             g.strokePath (p, juce::PathStrokeType (2.2f, juce::PathStrokeType::curved,
                                                    juce::PathStrokeType::rounded));
         }

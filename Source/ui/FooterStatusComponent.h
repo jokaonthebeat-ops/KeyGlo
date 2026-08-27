@@ -93,7 +93,7 @@ public:
                                         : juce::String ("AI ANALYSIS");
             g.drawText (label, right.removeFromRight (86), juce::Justification::centredRight);
 
-            if (auto* ic = Assets::icon ("confidence", tokens::muted))
+            if (auto* ic = Assets::icon ("brain", tokens::muted))
                 ic->drawWithin (g, right.removeFromRight (18)
                                      .withSizeKeepingCentre (14, 14).toFloat(),
                                 juce::RectanglePlacement::centred, 1.0f);

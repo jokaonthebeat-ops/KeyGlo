@@ -88,11 +88,11 @@ public:
 
             g.setColour (tokens::muted.brighter (0.08f));
             g.setFont (Fonts::rowLabel());
-            g.drawText (labels[i], kb.getCentreX() + 42, kb.getY() + 26, 130, 16,
+            g.drawText (labels[i], kb.getCentreX() + 42, kb.getY() + 18, 130, 16,
                         juce::Justification::centredLeft);
 
             const juce::Rectangle<int> valueRow (kb.getCentreX() - 70,
-                                                 kb.getBottom() + 6, 140, 18);
+                                                 kb.getBottom() - 9, 140, 18);
             const bool gold = i == 4;
             g.setColour (gold ? tokens::gold : tokens::text);
             g.setFont (Fonts::make (15.0f, true));
@@ -103,8 +103,8 @@ public:
                 g.drawText (valueText (i), valueRow, juce::Justification::centred);
                 g.setColour (tokens::muted2);
                 g.setFont (Fonts::make (9.5f, false, true).withExtraKerningFactor (0.06f));
-                g.drawText ("DRY", valueRow.translated (-52, 2), juce::Justification::centred);
-                g.drawText ("WET", valueRow.translated (52, 2), juce::Justification::centred);
+                g.drawText ("DRY", valueRow.translated (-48, -3), juce::Justification::centred);
+                g.drawText ("WET", valueRow.translated (48, -3), juce::Justification::centred);
             }
             else if (gold)
             {

@@ -169,7 +169,14 @@ public:
         const juce::Rectangle<float> wheel (wheelBox.getCentreX() - size * 0.5f,
                                             wheelBox.getCentreY() - size * 0.5f, size, size);
         const auto centre = wheel.getCentre();
-        const float nodeRadius = size * notes::wheelRadiusNorm;
+
+        // Node ring: measured off the approved mockup's node centres, the
+        // nodes orbit at ~0.39 of the wheel size - just inside the art's main
+        // bright ring (0.443, measured radially off key_wheel_base_1024) and
+        // outside note_positions.json's 350/1024. Angles stay the JSON's
+        // exact 30-degree chromatic steps; the mockup's own node placement
+        // wobbles by up to 25 degrees because it is a rendered image.
+        const float nodeRadius = size * 0.39f;
 
         // --- base art ------------------------------------------------------
         auto base = Assets::keyWheelBase();
@@ -185,9 +192,9 @@ public:
         }
 
         // --- rotating accent arcs -----------------------------------------
-        drawOrbitArc (g, centre, nodeRadius * 1.155f, arcCyan, 145.0f, tokens::cyan, 3.5f);
-        drawOrbitArc (g, centre, nodeRadius * 1.215f, arcViolet, 115.0f, tokens::violet, 3.0f);
-        drawOrbitArc (g, centre, nodeRadius * 1.27f,  arcGold, 38.0f, tokens::gold, 2.4f);
+        drawOrbitArc (g, centre, nodeRadius * 1.16f, arcCyan, 145.0f, tokens::cyan, 4.5f);
+        drawOrbitArc (g, centre, nodeRadius * 1.21f, arcViolet, 115.0f, tokens::violet, 3.6f);
+        drawOrbitArc (g, centre, nodeRadius * 1.25f, arcGold, 38.0f, tokens::gold, 2.8f);
 
         // --- note nodes ----------------------------------------------------
         for (int i = 0; i < 12; ++i)
@@ -204,7 +211,7 @@ public:
             // non-scale nodes stay still but keep a faint rim.
             const float pulse = isRoot  ? 1.0f + 0.11f * energy
                               : inScale ? 1.0f + 0.07f * energy : 1.0f;
-            const float d = (isRoot ? 56.0f : inScale ? 42.0f : 36.0f) * pulse;
+            const float d = (isRoot ? 60.0f : inScale ? 46.0f : 38.0f) * pulse;
 
             auto art = inScale ? Assets::noteNodeActive (Accent::cyan)
                                : Assets::noteNodeInactive();
@@ -256,6 +263,9 @@ public:
         g.setFont (Fonts::centerKey());
         g.drawText (snap->key.toUpperCase() + " " + snap->scale.toUpperCase(),
                     centreBox.removeFromTop (44), juce::Justification::centred);
+
+        g.setColour (tokens::stroke.brighter (0.15f));
+        g.fillRect (centreBox.getCentreX() - 70, centreBox.getY() + 2, 140, 1);
 
         g.setColour (tokens::muted);
         g.setFont (Fonts::make (12.5f, false, true).withExtraKerningFactor (0.09f));

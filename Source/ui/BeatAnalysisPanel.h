@@ -56,7 +56,7 @@ public:
             { "tempo",      "BPM",          juce::String (juce::roundToInt (snap->bpm)), false },
             { "tuning",     "TUNING",       juce::String (juce::roundToInt (snap->tuningCents)) + " cents", false },
             { "confidence", "CONFIDENCE",   juce::String (juce::roundToInt (snap->keyConfidence * 100.0f)) + "%", true },
-            { "profile",    "ALTERNATIVES", snap->altKey + " " + snap->altScale,         false },
+            { "alternatives", "ALTERNATIVES", snap->altKey + " " + snap->altScale,       false },
         };
 
         for (int i = 0; i < 6; ++i)
@@ -193,13 +193,13 @@ private:
             const auto colour = tokens::cyan.interpolatedWith (tokens::violet,
                                                                juce::jlimit (0.0f, 1.0f, (blend - 0.45f) * 2.2f));
 
-            const float h = v * (float) plot.getHeight();
-            g.setColour (colour.withAlpha (0.85f));
-            g.fillRect (x, (float) plot.getBottom() - h, juce::jmax (1.0f, bw - 1.2f), h);
+            const float h = juce::jmin (1.0f, v * 1.12f) * (float) plot.getHeight();
+            g.setColour (colour.withAlpha (0.95f));
+            g.fillRect (x, (float) plot.getBottom() - h, juce::jmax (1.0f, bw - 0.8f), h);
 
-            const float ph = peak * (float) plot.getHeight();
-            g.setColour (colour.withAlpha (0.5f));
-            g.fillRect (x, (float) plot.getBottom() - ph - 1.5f, juce::jmax (1.0f, bw - 1.2f), 1.5f);
+            const float ph = juce::jmin (1.0f, peak * 1.12f) * (float) plot.getHeight();
+            g.setColour (colour.withAlpha (0.55f));
+            g.fillRect (x, (float) plot.getBottom() - ph - 1.5f, juce::jmax (1.0f, bw - 0.8f), 1.5f);
         }
 
         // Frequency captions along the bottom, inside the well.
@@ -227,22 +227,28 @@ private:
             g.drawRoundedRectangle (r.toFloat().reduced (1.0f), 8.0f, 1.0f);
         }
 
-        auto content = r.reduced (14, 8);
-        if (auto* ic = Assets::icon ("upload", tokens::text))
-            ic->drawWithin (g, content.removeFromLeft (26).withSizeKeepingCentre (20, 20).toFloat(),
-                            juce::RectanglePlacement::centred, 1.0f);
-        content.removeFromLeft (10);
-
+        // Icon + two text lines, centred as a group (approved mockup).
         const bool hasFile = droppedName.isNotEmpty();
+        const auto title = hasFile ? droppedName : juce::String ("DRAG & DROP BEAT HERE");
+        const auto titleFont = Fonts::make (14.0f, false, true).withExtraKerningFactor (0.03f);
+        const int titleW = (int) std::ceil (juce::GlyphArrangement::getStringWidth (titleFont, title));
+        const int iconSz = 20, gap = 10;
+        const int startX = r.getCentreX() - (iconSz + gap + titleW) / 2;
+
+        if (auto* ic = Assets::icon ("upload", tokens::text))
+            ic->drawWithin (g, juce::Rectangle<float> ((float) startX,
+                            (float) r.getY() + 10.0f, (float) iconSz, (float) iconSz),
+                            juce::RectanglePlacement::centred, 1.0f);
+
         g.setColour (tokens::text);
-        g.setFont (Fonts::make (14.0f, false, true).withExtraKerningFactor (0.03f));
-        g.drawText (hasFile ? droppedName : "DRAG & DROP BEAT HERE",
-                    content.withTrimmedBottom (16), juce::Justification::bottomLeft);
+        g.setFont (titleFont);
+        g.drawText (title, startX + iconSz + gap, r.getY() + 9, titleW + 4, 20,
+                    juce::Justification::centredLeft);
+
         g.setColour (tokens::muted2);
         g.setFont (Fonts::make (10.5f, true).withExtraKerningFactor (0.1f));
         g.drawText (hasFile ? "QUEUED FOR ANALYSIS" : "WAV / MP3 / FLAC",
-                    content.withTrimmedTop (content.getHeight() - 14),
-                    juce::Justification::topLeft);
+                    r.withTrimmedTop (30), juce::Justification::centredTop);
     }
 
     void drawNoteMap (juce::Graphics& g, juce::Rectangle<int> r, const AnalysisSnapshot& snap)
@@ -256,6 +262,10 @@ private:
                     header, juce::Justification::centredRight);
 
         r.removeFromTop (3);
+        // The supplied note-map art ships with the demo scale's key highlights
+        // already baked in (matching the approved reference). Drawn as-is for
+        // the UI milestone; milestone 2 replaces this with a live-drawn piano
+        // so the highlights follow the actual detected scale.
         auto piano = Assets::noteMapPiano();
         g.setColour (juce::Colours::white);
         if (piano.isValid())
@@ -264,20 +274,6 @@ private:
         {
             g.setColour (tokens::panel3);
             g.fillRect (r);
-        }
-
-        // Live scale highlight over two octaves, root brightest.
-        const int semis = 24;
-        const float w = (float) r.getWidth() / (float) semis;
-        for (int s = 0; s < semis; ++s)
-        {
-            const int pc = s % 12;
-            if (! snap.scaleNotes[(size_t) pc])
-                continue;
-            const bool root = pc == snap.rootNote;
-            g.setColour (tokens::cyan.withAlpha (root ? 0.5f : 0.28f));
-            g.fillRect ((float) r.getX() + w * (float) s, (float) r.getY(),
-                        juce::jmax (1.0f, w - 1.0f), (float) r.getHeight());
         }
     }
 

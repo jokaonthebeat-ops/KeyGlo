@@ -89,7 +89,7 @@ public:
 
         g.setColour (tokens::text);
         g.setFont (Fonts::panelTitle());
-        g.drawText ("TRANSPOSE PREVIEW", 0, 14, getWidth(), 24, juce::Justification::centred);
+        g.drawText ("TRANSPOSE PREVIEW", 0, 22, getWidth(), 24, juce::Justification::centred);
 
         // --- connector stem from the selected button to the result card ----
         const int sel = shownSelection;

@@ -60,9 +60,10 @@ struct AnalysisSnapshot
 
     bool analyzing = false;   // ramps the wheel orbit speed
 
-    // Scale membership of the detected key (F# natural minor by default).
-    std::array<bool, 12> scaleNotes { false, true, false, false, true, false,
-                                      true,  false, true,  true,  false, true };
+    // Scale membership of the detected key (F# natural minor by default:
+    // F# G# A B C# D E -> pitch classes 6 8 9 11 1 2 4).
+    std::array<bool, 12> scaleNotes { false, true, true, false, true, false,
+                                      true,  false, true, true,  false, true };
     int rootNote = 6;   // F#
 };
 
@@ -214,10 +215,13 @@ private:
         }
         else
         {
+            // Slow glide plus micro-drift so the trail reads as a sung line,
+            // not a step sequencer.
             const float target = degrees[noteIndex];
-            vocalMidi += 0.25f * (target - vocalMidi);
-            const float vibrato = 0.12f * (float) std::sin (vibPhase += dt * 34.0);
-            trailMidi[(size_t) trailHead] = vocalMidi + vibrato;
+            vocalMidi += 0.075f * (target - vocalMidi);
+            const float vibrato = 0.14f * (float) std::sin (vibPhase += dt * 34.0);
+            const float drift = 0.10f * (float) (seededNoise() - 0.5);
+            trailMidi[(size_t) trailHead] = vocalMidi + vibrato + drift;
         }
         trailHead = (trailHead + 1) % trailLength;
     }

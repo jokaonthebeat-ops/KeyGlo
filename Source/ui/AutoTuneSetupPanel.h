@@ -72,11 +72,11 @@ public:
         drawPanelTitle (g, { 15, 15, 260, 26 }, "tuning", "Auto-Tune Setup", tokens::cyan);
 
         // --- key / scale / mode -------------------------------------------
-        const juce::Rectangle<int> tableArea (13, 58, 287, 88);
+        const juce::Rectangle<int> tableArea (13, 60, 287, 78);
         const char* labels[] = { "KEY", "SCALE", "MODE" };
         const juce::String values[] = { snap->newKey, snap->newScale, "Modern" };
 
-        const juce::Rectangle<int> valueBox (tableArea.getX() + 100, tableArea.getY() - 2,
+        const juce::Rectangle<int> valueBox (tableArea.getX() + 112, tableArea.getY() - 2,
                                              92, tableArea.getHeight() + 4);
         g.setColour (tokens::panel3.withAlpha (0.8f));
         g.fillRoundedRectangle (valueBox.toFloat(), 6.0f);
@@ -164,7 +164,7 @@ private:
             const juce::Rectangle<float> key ((float) r.getX() + whiteW * (float) i,
                                               (float) r.getY(),
                                               whiteW - 1.0f, (float) r.getHeight());
-            g.setColour (lit[(size_t) pc] ? tokens::cyan.interpolatedWith (tokens::white, 0.55f)
+            g.setColour (lit[(size_t) pc] ? tokens::cyan.interpolatedWith (tokens::white, 0.35f)
                                           : tokens::text.darker (0.05f));
             g.fillRect (key);
             if (lit[(size_t) pc])

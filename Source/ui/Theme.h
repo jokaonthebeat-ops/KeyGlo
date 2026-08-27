@@ -125,9 +125,10 @@ namespace layout
     // --- primary bounds: layout_1491x1055.json, verbatim ------------------
     inline const R header           {    2,   2, 1487,  83 };
     inline const R logo             {   35,  17,  250,  58 };
-    inline const R presetPrev       {  470,  18,   60,  52 };
-    inline const R presetName       {  530,  18,  338,  52 };
-    inline const R presetNext       {  868,  18,   56,  52 };
+    // Preset cluster measured off the mockup - the JSON sits 22 px left of it.
+    inline const R presetPrev       {  492,  18,   60,  52 };   // json: 470
+    inline const R presetName       {  552,  18,  338,  52 };   // json: 530
+    inline const R presetNext       {  890,  18,   56,  52 };   // json: 868
     inline const R headerUtilities  { 1018,  13,  424,  60 };
 
     inline const R beatPanel        {   15,  91,  360, 460 };
@@ -144,7 +145,7 @@ namespace layout
     inline const R beatDropZone     {   23, 405,  343,  60 };
     inline const R beatNoteMap      {   23, 472,  343,  69 };
 
-    inline const R artistCurrentNote{ 1065, 137,  182,  61 };
+    inline const R artistCurrentNote{ 1073, 146,  182,  61 };   // json: 1065,137
     inline const R artistPiano      { 1075, 207,   58, 276 };
     inline const R artistRangeGraph { 1136, 207,  292, 276 };
     inline const R artistStartRange { 1058, 494,  177,  42 };
@@ -154,29 +155,39 @@ namespace layout
     inline const R transposePanel   {  329, 559,  695, 270 };
     inline const R samplePanel      { 1033, 559,  443, 270 };
 
-    inline const R transposeButtons {  350, 596,  655,  49 };
-    inline const R transposeResult  {  397, 678,  354, 116 };
-    inline const R compareA         {  786, 681,   72,  91 };
-    inline const R compareB         {  870, 681,   84,  91 };
+    // Measured off the approved mockup - layout_1491x1055.json drifts 10-20 px
+    // from the reference here (the declared visual authority), same as the
+    // SourceGlo pack. JSON values kept in comments for the audit trail.
+    inline const R transposeButtons {  367, 608,  655,  49 };   // json: 350,596
+    // Sits exactly on the shell's well (borders measured off the shell art at
+    // {399,680,351,113}); both the JSON (397,678) and the mockup card (414,689)
+    // disagree with the chassis they ship with.
+    inline const R transposeResult  {  399, 680,  352, 113 };
+    inline const R compareA         {  812, 697,   72,  91 };   // json: 786,681
+    inline const R compareB         {  896, 697,   84,  91 };   // json: 870,681
 
-    inline const R autotuneNoteChips{   28, 708,  282,  28 };
-    inline const R autotuneKeyboard {   28, 744,  282,  39 };
-    inline const R copyScale        {   28, 790,  282,  31 };
+    inline const R autotuneNoteChips{   28, 717,  282,  28 };   // json: 708
+    inline const R autotuneKeyboard {   28, 752,  282,  44 };   // json: 744,h39
+    inline const R copyScale        {   28, 796,  282,  31 };   // json: 790
 
     inline const R sampleWaveform   { 1046, 606,  244,  99 };
-    inline const R sampleTuner      { 1297, 579,  134, 134 };
-    inline const R sampleReadouts   { 1047, 719,  383,  60 };
+    inline const R sampleTuner      { 1305, 585,  134, 134 };   // json: 1297,579
+    inline const R sampleReadouts   { 1047, 727,  383,  60 };   // json: y719
     inline const R applyTune        { 1046, 790,  219,  31 };
     inline const R sampleSolo       { 1274, 790,  157,  31 };
 
     inline const R macroPanel       {   15, 835, 1461, 142 };
-    inline const R rangeSenseKnob   {   86, 849,  126, 126 };
-    inline const R keySenseKnob     {  299, 849,  126, 126 };
-    inline const R smoothKnob       {  512, 849,  126, 126 };
-    inline const R previewMixKnob   {  724, 849,  126, 126 };
-    inline const R fineTuneKnob     {  939, 849,  126, 126 };
-    inline const R outputKnob       { 1150, 849,  126, 126 };
-    inline const R outputMeter      { 1345, 850,   78, 124 };
+    // Knob centres measured off the mockup's value readouts: x = 150, 374,
+    // 592, 810, 1028, 1244 (uniform 218 px pitch), centre y = 924. The JSON's
+    // knob row (x 86/299/512/724/939/1150, y 849) sits up to 31 px left and
+    // 12 px high of the approved art.
+    inline const R rangeSenseKnob   {   87, 861,  126, 126 };
+    inline const R keySenseKnob     {  311, 861,  126, 126 };
+    inline const R smoothKnob       {  529, 861,  126, 126 };
+    inline const R previewMixKnob   {  747, 861,  126, 126 };
+    inline const R fineTuneKnob     {  965, 861,  126, 126 };
+    inline const R outputKnob       { 1181, 861,  126, 126 };
+    inline const R outputMeter      { 1363, 853,   78, 124 };   // json: 1345,850
 
     inline const R footer           {    2, 981, 1487,  72 };
 }

@@ -437,9 +437,15 @@ juce::Drawable* Assets::icon (const juce::String& name, juce::Colour tint)
         const auto hex = tint.toDisplayString (false);
         svg = svg.replaceCharacters ("\r", " ");
 
-        // stroke="#XXXXXX" / fill="#XXXXXX" -> requested tint (keeps "none").
+        // These icons are stroke-drawn (1.8 px, round caps, inner paths carry
+        // fill="none"), but the export also stamps the stroke colour as the
+        // group FILL, which turns e.g. the help "?" ring into a solid disc -
+        // both in the SVGs and in the pack's own PNG exports. Correct the
+        // export at load: group fills become none, strokes take the tint.
         for (const char* attr : { "stroke=\"#", "fill=\"#" })
         {
+            const bool isFill = attr[0] == 'f';
+            const juce::String replacement = isFill ? "none" : hex;
             int pos = 0;
             while ((pos = svg.indexOf (pos, attr)) >= 0)
             {
@@ -447,7 +453,8 @@ juce::Drawable* Assets::icon (const juce::String& name, juce::Colour tint)
                 int valueEnd = valueStart;
                 while (valueEnd < svg.length() && svg[valueEnd] != '"')
                     ++valueEnd;
-                svg = svg.substring (0, valueStart) + hex + svg.substring (valueEnd);
+                svg = svg.substring (0, valueStart - (isFill ? 1 : 0))
+                        + replacement + svg.substring (valueEnd);
                 pos = valueStart;
             }
         }
