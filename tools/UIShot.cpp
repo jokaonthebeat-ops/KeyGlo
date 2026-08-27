@@ -5,7 +5,11 @@
 //    make uishot ARGS="out.png min"         -> 1044x739
 //    make uishot ARGS="out.png max"         -> 2237x1583
 //    make uishot ARGS="out.png def signal"  -> feed test audio first so the
-//                                              meters run from real levels
+//                                              meters + analysis run live
+//    make uishot ARGS="out.png def demo"    -> demo display mode: the
+//                                              contract dataset + DemoFeed
+//                                              (approved-reference overlay,
+//                                              marketing shots)
 //    make uishot ARGS="out.png def signal settle=N" -> N refresh frames
 //                                              (animation phase control)
 //
@@ -49,6 +53,17 @@ int main (int argc, char** argv)
     processor.setPlayConfigDetails (2, 2, 48000.0, 512);
     processor.prepareToPlay (48000.0, 512);
 
+    if (modeArg.contains ("demo"))
+    {
+        // The approved-reference state: contract dataset presented as a
+        // result, ambience from the DemoFeed.
+        demoDisplayMode() = true;
+        auto demoSnap = std::make_shared<AnalysisSnapshot>();
+        demoSnap->hasBeatResult = true;
+        demoSnap->sourceName = "DEMO";
+        processor.getDisplayModel().publish (std::move (demoSnap));
+    }
+
     std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditor());
     if (editor == nullptr)
     {
@@ -64,33 +79,54 @@ int main (int argc, char** argv)
         return 2;
     }
 
-    auto feedSignal = [&]
+    // F#-minor-flavoured test feed at 148 BPM: an 808-ish bass line walking
+    // i-VI-iv-VII with kick pulses and a filtered noise bed. Enough musical
+    // truth for the real engine to detect key and tempo from the ring.
+    auto feedSignal = [&] (double seconds)
     {
-        // 808-flavoured test feed at the demo BPM: 46 Hz tone bursts plus a
-        // filtered noise bed - honest levels for the meters.
         juce::AudioBuffer<float> audio (2, 512);
         juce::MidiBuffer midi;
         juce::Random random (0x4b47);
-        double phase = 0.0;
+        double bassPhase = 0.0, chordPhase[3] = { 0.0, 0.0, 0.0 };
         float lp = 0.0f;
         static int sampleIndex = 0;
 
-        for (int block = 0; block < 24; ++block)
+        static const double bassHz[4] = { 46.25, 36.71, 61.74, 41.20 };  // F#1 D1 B1 E1
+        static const double triads[4][3] = { { 185.0, 220.0, 277.18 },   // F#m
+                                             { 146.83, 185.0, 220.0 },   // D
+                                             { 123.47, 146.83, 185.0 },  // Bm
+                                             { 164.81, 207.65, 246.94 } };// E
+
+        const int blocks = (int) (48000.0 * seconds / 512.0);
+        for (int block = 0; block < blocks; ++block)
         {
             for (int i = 0; i < 512; ++i)
             {
-                const double beatPos = std::fmod ((double) sampleIndex / 48000.0, 0.405); // 148 BPM
-                const float env = (float) std::exp (-beatPos * 8.0);
+                const double t = (double) sampleIndex / 48000.0;
+                const double beatLen = 60.0 / 148.0;
+                const int bar = (int) (t / (beatLen * 4.0));
+                const int chord = bar % 4;
+                const double beatPos = std::fmod (t, beatLen);
+                const float kick = (float) std::exp (-beatPos * 9.0);
 
-                phase += 2.0 * juce::MathConstants<double>::pi * (46.25 + 20.0 * env) / 48000.0;
-                const float bass = 0.8f * env * (float) std::sin (phase);
+                bassPhase += 2.0 * juce::MathConstants<double>::pi
+                               * (bassHz[chord] + 7.0 * kick) / 48000.0;
+                float v = 0.48f * (0.45f + 0.55f * kick) * (float) std::sin (bassPhase);
+
+                for (int n = 0; n < 3; ++n)
+                {
+                    chordPhase[n] += 2.0 * juce::MathConstants<double>::pi
+                                       * triads[chord][n] / 48000.0;
+                    v += 0.16f * (float) std::sin (chordPhase[n])
+                       + 0.05f * (float) std::sin (2.0 * chordPhase[n]);
+                }
 
                 const float white = random.nextFloat() * 2.0f - 1.0f;
                 lp += 0.12f * (white - lp);
-                const float bed = 0.09f * lp;
+                v += 0.035f * lp;
 
-                audio.setSample (0, i, bass + bed);
-                audio.setSample (1, i, bass + bed * 0.9f);
+                audio.setSample (0, i, v);
+                audio.setSample (1, i, v * 0.96f);
                 ++sampleIndex;
             }
             processor.processBlock (audio, midi);
@@ -98,7 +134,23 @@ int main (int argc, char** argv)
     };
 
     if (modeArg.contains ("signal"))
-        feedSignal();
+    {
+        // In demo mode the feed only lights the meters/spectrum - the demo
+        // snapshot stays authoritative, so the real engine's verdict on the
+        // test loop must not replace it.
+        feedSignal (demoDisplayMode() ? 1.0 : 8.5);
+        if (! demoDisplayMode())
+        {
+            processor.analyseCaptureNow();
+            for (int tries = 0; tries < 300; ++tries)
+            {
+                auto snap = processor.getDisplayModel().get();
+                if (snap->hasBeatResult && ! snap->analyzing)
+                    break;
+                juce::Thread::sleep (50);
+            }
+        }
+    }
 
     // Let the animated displays settle (pods tween in, trail scrolls,
     // spectrum smooths). Deterministic frame count = reproducible shots.
@@ -108,7 +160,8 @@ int main (int argc, char** argv)
     // Top the meters back up so the capture shows them lit.
     if (modeArg.contains ("signal"))
     {
-        feedSignal();
+        feedSignal (0.3);
+        juce::Thread::sleep (120);   // let the fast lane publish the spectrum
         kgEditor->refreshDisplays();
     }
 

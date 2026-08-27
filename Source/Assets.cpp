@@ -128,7 +128,14 @@ juce::Image Assets::shell2x()
 
 juce::Image Assets::logoHeader (float scale)
 {
-    // Cropped to opaque bounds (155x44 of art in the 250x58 canvas at 1x).
+    // v2 wordmark supplied by the user on 2026-08-26 (chrome + neon, 2049x562
+    // opaque art in a 2172x724 transparent canvas). One high-res master drawn
+    // at every scale - sharp on Retina, one decode (the MasterGlo rule).
+    static const juce::Image v2 = trimToOpaqueBounds (load ("Brand/keyglo_logo_v2_2172x724.png"));
+    if (v2.isValid())
+        return v2;
+
+    // Pack exports as fallback (155x44 of art in the 250x58 canvas at 1x).
     static const juce::Image x1 = trimToOpaqueBounds (load ("Brand/keyglo_header_logo_250x58.png"));
     static const juce::Image x2 = trimToOpaqueBounds (load ("Brand/keyglo_header_logo_500x116.png"));
 

@@ -43,6 +43,12 @@ public:
         }
     }
 
+    // Empty pods show "--" and no ring until their engine milestone reports.
+    void setEmpty (bool e)
+    {
+        if (empty != e) { empty = e; repaint(); }
+    }
+
     void update (double dt)
     {
         if (tweenT < 1.0f)
@@ -73,6 +79,7 @@ public:
                                  : accent == Accent::gold  ? tokens::gold : tokens::cyan;
 
         // Progress ring, from 12 o'clock clockwise.
+        if (! empty)
         {
             juce::Path arc;
             const float radius = r.getWidth() * 0.5f - 7.0f;
@@ -93,9 +100,9 @@ public:
         if (line2.isNotEmpty())
             g.drawText (line2, labels, juce::Justification::centred);
 
-        g.setColour (accentColour);
+        g.setColour (empty ? tokens::muted2 : accentColour);
         g.setFont (Fonts::podScore());
-        g.drawText (juce::String (juce::roundToInt (displayed * 100.0f)),
+        g.drawText (empty ? "--" : juce::String (juce::roundToInt (displayed * 100.0f)),
                     getLocalBounds().withTrimmedTop (juce::roundToInt (h * 0.48f))
                                     .withHeight (34),
                     juce::Justification::centred);
@@ -105,6 +112,7 @@ private:
     juce::String line1, line2;
     Accent accent;
     float target = 0.0f, displayed = 0.0f, tweenFrom = 0.0f, tweenT = 1.0f;
+    bool empty = false;
 };
 
 // -----------------------------------------------------------------------------
@@ -127,6 +135,8 @@ public:
     void update (double dt)
     {
         auto snap = processor.getDisplayModel().get();
+        const bool demoMode = demoDisplayMode();
+        const bool goodKey = demoMode || (snap->hasBeatResult && ! snap->noReliableKey);
 
         // Orbit speeds (animation_tokens.json): idle 4.5 deg/s, analysing 32,
         // easing over 350 ms; arcs run in opposing directions.
@@ -140,9 +150,28 @@ public:
             arcGold   += (float) dt * orbitSpeed * 0.45f;
         }
 
-        confidencePod.setTarget (snap->keyConfidence);
-        rangePod.setTarget (snap->rangeFit);
-        hookPod.setTarget (snap->hookMatch);
+        // Node energy: the live input chroma in production, the demo feed in
+        // demo shots, with the spec's pulse ballistics (attack 55 ms,
+        // release 260 ms) applied per node.
+        auto live = processor.getDisplayModel().getLive();
+        for (int i = 0; i < 12; ++i)
+        {
+            float target = demoMode ? demo.chroma[(size_t) i]
+                         : live->active ? live->chroma[(size_t) i]
+                         : goodKey ? snap->chroma[(size_t) i] * 0.5f : 0.0f;
+            auto& e = nodeEnergy[(size_t) i];
+            const float ms = target > e ? 55.0f : 260.0f;
+            e += (target - e) * juce::jmin (1.0f, (float) (dt * 1000.0 / ms));
+        }
+
+        // Key confidence is real from milestone 2; artist-side pods stay
+        // honest "--" until milestone 3 delivers their engines.
+        confidencePod.setEmpty (! goodKey);
+        confidencePod.setTarget (goodKey ? snap->keyConfidence : 0.0f);
+        rangePod.setEmpty (! demoMode);
+        hookPod.setEmpty (! demoMode);
+        rangePod.setTarget (demoMode ? snap->rangeFit : 0.0f);
+        hookPod.setTarget (demoMode ? snap->hookMatch : 0.0f);
         confidencePod.update (dt);
         rangePod.update (dt);
         hookPod.update (dt);
@@ -197,34 +226,41 @@ public:
         drawOrbitArc (g, centre, nodeRadius * 1.25f, arcGold, 38.0f, tokens::gold, 2.8f);
 
         // --- note nodes ----------------------------------------------------
+        const bool demoMode = demoDisplayMode();
+        const bool goodKey = demoMode || (snap->hasBeatResult && ! snap->noReliableKey);
+
         for (int i = 0; i < 12; ++i)
         {
             const float a = juce::degreesToRadians (notes::wheelAngleDegrees[i]);
             const juce::Point<float> pos (centre.x + std::cos (a) * nodeRadius,
                                           centre.y + std::sin (a) * nodeRadius);
 
-            const bool isRoot  = i == snap->rootNote;
-            const bool inScale = snap->scaleNotes[(size_t) i];
-            const float energy = demo.chroma[(size_t) i];
+            // Without a detected key every node is neutral; the live chroma
+            // still pulses them while audio plays.
+            const bool isRoot  = goodKey && i == snap->rootNote;
+            const bool inScale = goodKey && snap->scaleNotes[(size_t) i];
+            const float energy = nodeEnergy[(size_t) i];
 
             // notePulse: root breathes to 1.11x, scale notes to 1.07x,
             // non-scale nodes stay still but keep a faint rim.
             const float pulse = isRoot  ? 1.0f + 0.11f * energy
-                              : inScale ? 1.0f + 0.07f * energy : 1.0f;
+                              : inScale ? 1.0f + 0.07f * energy
+                              : goodKey ? 1.0f : 1.0f + 0.05f * energy;
             const float d = (isRoot ? 60.0f : inScale ? 46.0f : 38.0f) * pulse;
 
             auto art = inScale ? Assets::noteNodeActive (Accent::cyan)
                                : Assets::noteNodeInactive();
             const juce::Rectangle<float> box (pos.x - d * 0.5f, pos.y - d * 0.5f, d, d);
 
-            if (isRoot || inScale)
+            if (isRoot || inScale || (! goodKey && energy > 0.12f))
             {
                 // Chroma-driven halo behind the node.
                 auto glow = Assets::particleGlow (Accent::cyan);
                 if (glow.isValid())
                 {
+                    const float strength = isRoot ? 0.85f : inScale ? 0.45f : 0.25f;
                     g.setColour (juce::Colours::white.withAlpha (
-                        juce::jlimit (0.0f, 1.0f, (isRoot ? 0.85f : 0.45f) * (0.4f + 0.6f * energy))));
+                        juce::jlimit (0.0f, 1.0f, strength * (0.4f + 0.6f * energy))));
                     g.drawImage (glow, box.expanded (isRoot ? 26.0f : 14.0f),
                                  juce::RectanglePlacement::stretchToFit);
                 }
@@ -257,33 +293,51 @@ public:
                          juce::RectanglePlacement::stretchToFit);
         }
 
-        juce::Rectangle<int> centreBox ((int) centre.x - 120, (int) centre.y - 66,
-                                        240, 150);
-        g.setColour (tokens::white);
-        g.setFont (Fonts::centerKey());
-        g.drawText (snap->key.toUpperCase() + " " + snap->scale.toUpperCase(),
-                    centreBox.removeFromTop (44), juce::Justification::centred);
+        juce::Rectangle<int> centreBox ((int) centre.x - 130, (int) centre.y - 66,
+                                        260, 150);
+
+        // Key line: detected key, an analysing note, an honest failure, or
+        // the fresh-instance hint.
+        juce::String keyLine = snap->key.toUpperCase() + " " + snap->scale.toUpperCase();
+        float keyHeight = 38.0f;
+        if (! demoMode && ! snap->hasBeatResult)
+        {
+            keyLine = snap->analyzing ? "ANALYZING..." : "DROP A BEAT";
+            keyHeight = 27.0f;
+        }
+        else if (! demoMode && snap->noReliableKey)
+        {
+            keyLine = "NO RELIABLE KEY";
+            keyHeight = 24.0f;
+        }
+
+        g.setColour (goodKey || demoMode ? tokens::white : tokens::muted.brighter (0.1f));
+        g.setFont (Fonts::centerKey().withHeight (keyHeight));
+        g.drawText (keyLine, centreBox.removeFromTop (44), juce::Justification::centred);
 
         g.setColour (tokens::stroke.brighter (0.15f));
         g.fillRect (centreBox.getCentreX() - 70, centreBox.getY() + 2, 140, 1);
+
+        // Artist Fit and the recommendation stay "--" until milestone 3.
+        const bool haveFit = demoMode;
 
         g.setColour (tokens::muted);
         g.setFont (Fonts::make (12.5f, false, true).withExtraKerningFactor (0.09f));
         g.drawText ("ARTIST FIT", centreBox.removeFromTop (20), juce::Justification::centred);
 
-        g.setColour (tokens::white);
+        g.setColour (haveFit ? tokens::white : tokens::muted2);
         g.setFont (Fonts::centerScore().withHeight (44.0f));
-        g.drawText (juce::String (juce::roundToInt (snap->artistFit * 100.0f)),
+        g.drawText (haveFit ? juce::String (juce::roundToInt (snap->artistFit * 100.0f)) : "--",
                     centreBox.removeFromTop (44), juce::Justification::centred);
 
         g.setColour (tokens::muted);
         g.setFont (Fonts::make (11.5f, false, true).withExtraKerningFactor (0.09f));
         g.drawText ("RECOMMENDED", centreBox.removeFromTop (17), juce::Justification::centred);
 
-        g.setColour (tokens::cyan);
+        g.setColour (haveFit ? tokens::cyan : tokens::muted2);
         g.setFont (Fonts::make (21.0f, false, true));
         const auto st = snap->recommendedTranspose;
-        g.drawText ((st > 0 ? "+" : "") + juce::String (st) + " ST",
+        g.drawText (haveFit ? (st > 0 ? "+" : "") + juce::String (st) + " ST" : "--",
                     centreBox, juce::Justification::centredTop);
     }
 
@@ -326,6 +380,7 @@ private:
     float arcCyan = -150.0f, arcViolet = -30.0f, arcGold = 55.0f;
     float orbitSpeed = 4.5f;
     bool reduceMotion = false;
+    std::array<float, 12> nodeEnergy {};
 };
 
 } // namespace keyglo

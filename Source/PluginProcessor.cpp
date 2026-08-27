@@ -12,6 +12,9 @@ KeyGloProcessor::KeyGloProcessor()
 {
     outputGainParam = apvts.getRawParameterValue (pid::outputGainDb);
     bypassParam     = apvts.getRawParameterValue (pid::pluginBypass);
+
+    captureRing.prepare (48000.0, 2);   // real rate arrives in prepareToPlay
+    coordinator = std::make_unique<AnalysisCoordinator> (captureRing, displayModel);
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout KeyGloProcessor::createLayout()
@@ -83,6 +86,9 @@ void KeyGloProcessor::prepareToPlay (double sampleRate, int)
     outputGain.setCurrentAndTargetValue (
         juce::Decibels::decibelsToGain (outputGainParam->load()));
     peakHold[0] = peakHold[1] = 0.0f;
+
+    if (std::abs (captureRing.sampleRate() - sampleRate) > 0.5)
+        captureRing.prepare (sampleRate, getTotalNumInputChannels());
 }
 
 bool KeyGloProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -101,6 +107,17 @@ void KeyGloProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     const int numSamples  = buffer.getNumSamples();
     const int numChannels = juce::jmin (2, buffer.getNumChannels());
     const bool bypassed   = bypassParam->load() > 0.5f;
+
+    // Capture the INPUT (pre-trim) for the analysis engine - the analyser
+    // reads the source material, not our output level.
+    captureRing.write (buffer);
+
+    // Host transport for the "host BPM in live sessions" rule. getPosition()
+    // is allocation-free; atomics carry it to the worker.
+    if (auto* playHead = getPlayHead())
+        if (auto position = playHead->getPosition())
+            coordinator->setHostTempo (position->getBpm().orFallback (0.0),
+                                       position->getIsPlaying());
 
     // Bypass still glides through the gain smoother to unity, so engaging or
     // releasing it cannot click (QA: "Bypass does not click").

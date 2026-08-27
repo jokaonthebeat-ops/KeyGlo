@@ -24,6 +24,16 @@ inline bool& headlessRefreshMode()
     return mode;
 }
 
+// Demo display mode: the beat panel/wheel run from the DemoFeed and the
+// contract dataset instead of live analysis - used by uishot for the
+// approved-reference overlay and marketing shots. Production instances never
+// set this; they show honest "--" fields until the engine has real results.
+inline bool& demoDisplayMode()
+{
+    static bool mode = false;
+    return mode;
+}
+
 // -----------------------------------------------------------------------------
 //  Colour tokens - Spec/.../08_LAYOUT/color_tokens.json, verbatim.
 // -----------------------------------------------------------------------------

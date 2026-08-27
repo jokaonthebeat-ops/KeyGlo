@@ -14,6 +14,8 @@
 #pragma once
 #include <JuceHeader.h>
 #include "AnalysisModel.h"
+#include "analysis/CaptureRing.h"
+#include "analysis/AnalysisCoordinator.h"
 
 namespace keyglo
 {
@@ -67,6 +69,12 @@ public:
     juce::AudioProcessorValueTreeState& getAPVTS()         { return apvts; }
     AnalysisDisplayModel& getDisplayModel()                { return displayModel; }
 
+    // Analysis engine (milestone 2). All asynchronous; results publish
+    // through the display model.
+    void analyseFileAsync (const juce::File& f)            { coordinator->analyseFileAsync (f); }
+    void analyseCaptureNow()                               { coordinator->analyseRingNow(); }
+    bool isAnalysisBusy() const                            { return coordinator->isBusy(); }
+
     float getPeakDb (int channel) const
     {
         return peakDb[juce::jlimit (0, 1, channel)].load (std::memory_order_relaxed);
@@ -86,6 +94,8 @@ private:
 
     juce::AudioProcessorValueTreeState apvts;
     AnalysisDisplayModel displayModel;
+    CaptureRing captureRing;
+    std::unique_ptr<AnalysisCoordinator> coordinator;
 
     juce::SmoothedValue<float> outputGain { 1.0f };
     std::atomic<float>* outputGainParam = nullptr;

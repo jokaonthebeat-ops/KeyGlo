@@ -21,6 +21,16 @@ namespace keyglo
 
 struct AnalysisSnapshot
 {
+    // --- state ------------------------------------------------------------
+    // hasBeatResult starts false: a fresh instance shows honest "--" fields
+    // until the engine has actually analysed something (the SourceGlo
+    // "Track 07" lesson - no mockup value ships as if it were a reading).
+    bool hasBeatResult = false;
+    bool noReliableKey = false;
+    bool analyzing = false;            // ramps the wheel orbit speed
+    juce::String sourceName;           // dropped file name, or "LIVE INPUT"
+    juce::String bpmSource;            // "HOST" when the DAW supplies tempo
+
     // --- beat -------------------------------------------------------------
     juce::String key = "F#";
     juce::String scale = "Minor";
@@ -58,20 +68,51 @@ struct AnalysisSnapshot
     std::array<float, 12> chroma { 0.22f, 0.87f, 0.69f, 0.18f, 0.73f, 0.21f,
                                    1.0f,  0.76f, 0.70f, 0.19f, 0.17f, 0.31f };
 
-    bool analyzing = false;   // ramps the wheel orbit speed
-
     // Scale membership of the detected key (F# natural minor by default:
     // F# G# A B C# D E -> pitch classes 6 8 9 11 1 2 4).
     std::array<bool, 12> scaleNotes { false, true, true, false, true, false,
                                       true,  false, true, true,  false, true };
     int rootNote = 6;   // F#
+
+    void setKeyFromPitchClass (int rootPc, bool isMinor)
+    {
+        static const char* names[12] = { "C", "C#", "D", "D#", "E", "F",
+                                         "F#", "G", "G#", "A", "A#", "B" };
+        rootNote = ((rootPc % 12) + 12) % 12;
+        key = names[rootNote];
+        scale = isMinor ? "Minor" : "Major";
+        const int minorSteps[7] = { 0, 2, 3, 5, 7, 8, 10 };
+        const int majorSteps[7] = { 0, 2, 4, 5, 7, 9, 11 };
+        scaleNotes.fill (false);
+        for (int i = 0; i < 7; ++i)
+            scaleNotes[(size_t) ((rootNote + (isMinor ? minorSteps[i]
+                                                      : majorSteps[i])) % 12)] = true;
+    }
+};
+
+// -----------------------------------------------------------------------------
+//  LiveVisuals - the fast lane: real input spectrum + chroma published by the
+//  analysis worker at display-ish rate for the wheel pulse and the beat
+//  panel's analyser. Separate from the snapshot so results and ambience can
+//  update at different cadences.
+// -----------------------------------------------------------------------------
+struct LiveVisuals
+{
+    std::array<float, 96> spectrum {};   // 0..1 per log-frequency band, 20 Hz..20 kHz
+    std::array<float, 12> chroma {};     // 0..1
+    float inputRms = 0.0f;
+    bool active = false;                 // audio present recently
 };
 
 // Lock-free publish/read of immutable snapshots (09_JUCE_HANDOFF pattern).
 class AnalysisDisplayModel
 {
 public:
-    AnalysisDisplayModel()  { publish (std::make_shared<const AnalysisSnapshot>()); }
+    AnalysisDisplayModel()
+    {
+        publish (std::make_shared<const AnalysisSnapshot>());
+        publishLive (std::make_shared<const LiveVisuals>());
+    }
 
     void publish (std::shared_ptr<const AnalysisSnapshot> next)
     {
@@ -83,8 +124,19 @@ public:
         return std::atomic_load (&snapshot);
     }
 
+    void publishLive (std::shared_ptr<const LiveVisuals> next)
+    {
+        std::atomic_store (&live, std::move (next));
+    }
+
+    std::shared_ptr<const LiveVisuals> getLive() const
+    {
+        return std::atomic_load (&live);
+    }
+
 private:
     mutable std::shared_ptr<const AnalysisSnapshot> snapshot;
+    mutable std::shared_ptr<const LiveVisuals> live;
 };
 
 // -----------------------------------------------------------------------------

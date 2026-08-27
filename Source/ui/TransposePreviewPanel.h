@@ -121,13 +121,29 @@ public:
         auto content = card.reduced (22, 14);
         auto topRow = content.removeFromTop (content.getHeight() / 2);
 
+        // NEW KEY is real music math once a key is detected: the selection
+        // applied to the detected root. ESTIMATED FIT needs milestone 3's
+        // artist profile - honest "--" until then.
+        const bool demoMode = demoDisplayMode();
+        const bool goodKey = demoMode || (snap->hasBeatResult && ! snap->noReliableKey);
+
+        juce::String newKeyText = "--";
+        if (demoMode)
+            newKeyText = snap->newKey + " " + snap->newScale;
+        else if (goodKey)
+        {
+            static const char* names[12] = { "C", "C#", "D", "D#", "E", "F",
+                                             "F#", "G", "G#", "A", "A#", "B" };
+            const int newRoot = ((snap->rootNote + (shownSelection - 4)) % 12 + 12) % 12;
+            newKeyText = juce::String (names[newRoot]) + " " + snap->scale;
+        }
+
         g.setColour (tokens::muted);
         g.setFont (Fonts::make (14.0f, false, true).withExtraKerningFactor (0.05f));
         g.drawText ("NEW KEY:", topRow.removeFromLeft (98), juce::Justification::centredLeft);
-        g.setColour (tokens::cyan);
+        g.setColour (goodKey ? tokens::cyan : tokens::muted2);
         g.setFont (Fonts::make (24.0f, false, true).withExtraKerningFactor (0.04f));
-        g.drawText (snap->newKey + " " + snap->newScale, topRow.translated (8, 0),
-                    juce::Justification::centredLeft);
+        g.drawText (newKeyText, topRow.translated (8, 0), juce::Justification::centredLeft);
 
         g.setColour (tokens::stroke.withAlpha (0.8f));
         g.fillRect (card.getX() + 16, card.getCentreY(), card.getWidth() - 32, 1);
@@ -136,9 +152,9 @@ public:
         g.setFont (Fonts::make (14.0f, false, true).withExtraKerningFactor (0.05f));
         g.drawText ("ESTIMATED FIT:", content.removeFromLeft (134),
                     juce::Justification::centredLeft);
-        g.setColour (tokens::cyan);
+        g.setColour (demoMode ? tokens::cyan : tokens::muted2);
         g.setFont (Fonts::make (27.0f, false, true));
-        g.drawText (juce::String (juce::roundToInt (snap->estimatedFit * 100.0f)),
+        g.drawText (demoMode ? juce::String (juce::roundToInt (snap->estimatedFit * 100.0f)) : "--",
                     content.translated (8, 0), juce::Justification::centredLeft);
 
         // --- captions under the A/B letters --------------------------------

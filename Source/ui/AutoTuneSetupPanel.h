@@ -72,9 +72,15 @@ public:
         drawPanelTitle (g, { 15, 15, 260, 26 }, "tuning", "Auto-Tune Setup", tokens::cyan);
 
         // --- key / scale / mode -------------------------------------------
+        // Demo shots show the contract's post-transpose key; production shows
+        // the DETECTED key once the engine reports (the transpose-adjusted
+        // recommendation arrives with milestone 3's fit scoring).
+        const auto shown = shownKeyScale();
         const juce::Rectangle<int> tableArea (13, 60, 287, 78);
         const char* labels[] = { "KEY", "SCALE", "MODE" };
-        const juce::String values[] = { snap->newKey, snap->newScale, "Modern" };
+        const juce::String values[] = { shown.first, shown.second,
+                                        shown.first == "--" ? juce::String ("--")
+                                                            : juce::String ("Modern") };
 
         const juce::Rectangle<int> valueBox (tableArea.getX() + 112, tableArea.getY() - 2,
                                              92, tableArea.getHeight() + 4);
@@ -110,6 +116,17 @@ public:
     }
 
 private:
+    // (key, scale) currently presented by this panel, "--" when nothing real.
+    std::pair<juce::String, juce::String> shownKeyScale() const
+    {
+        auto snap = processor.getDisplayModel().get();
+        if (demoDisplayMode())
+            return { snap->newKey, snap->newScale };
+        if (snap->hasBeatResult && ! snap->noReliableKey)
+            return { snap->key, snap->scale };
+        return { "--", "--" };
+    }
+
     void refreshNoteChips()
     {
         auto names = allowedNotes();
@@ -118,18 +135,22 @@ private:
             chips[i]->setLabel (i < names.size() ? names[i] : juce::String());
             chips[i]->setVisible (i < names.size());
         }
+        copyButton.setEnabled (! names.isEmpty());
     }
 
-    // Natural-minor scale of the recommended key (matches the contract data:
-    // E minor -> E F# G A B C D).
+    // Natural major/minor scale of the presented key (contract data: E minor
+    // -> E F# G A B C D). Empty when there is no real key yet.
     juce::StringArray allowedNotes() const
     {
-        auto snap = processor.getDisplayModel().get();
+        const auto shown = shownKeyScale();
+        if (shown.first == "--")
+            return {};
+
         int root = 0;
         for (int i = 0; i < 12; ++i)
-            if (snap->newKey == notes::names[i]) { root = i; break; }
+            if (shown.first == notes::names[i]) { root = i; break; }
 
-        const bool minor = snap->newScale.equalsIgnoreCase ("minor");
+        const bool minor = shown.second.equalsIgnoreCase ("minor");
         const int minorSteps[] = { 0, 2, 3, 5, 7, 8, 10 };
         const int majorSteps[] = { 0, 2, 4, 5, 7, 9, 11 };
 
@@ -201,14 +222,17 @@ private:
 
     void copyScaleToClipboard()
     {
+        const auto shown = shownKeyScale();
+        if (shown.first == "--")
+            return;
+
         auto snap = processor.getDisplayModel().get();
-        juce::SystemClipboard::copyTextToClipboard (
-            "KeyGlo scale setup: " + snap->newKey + " " + snap->newScale
-              + " | Allowed notes: " + allowedNotes().joinIntoString (" ")
-              + " | Beat: " + snap->key + " " + snap->scale
-              + " @ " + juce::String (juce::roundToInt (snap->bpm)) + " BPM"
-              + " | Recommended transpose: "
-              + juce::String (snap->recommendedTranspose) + " st");
+        juce::String text = "KeyGlo scale setup: " + shown.first + " " + shown.second
+                          + " | Allowed notes: " + allowedNotes().joinIntoString (" ");
+        if (snap->hasBeatResult && ! snap->noReliableKey && snap->bpm > 1.0f)
+            text += " | Beat: " + snap->key + " " + snap->scale
+                  + " @ " + juce::String (juce::roundToInt (snap->bpm)) + " BPM";
+        juce::SystemClipboard::copyTextToClipboard (text);
     }
 
     KeyGloProcessor& processor;

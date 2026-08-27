@@ -11,6 +11,9 @@
 
 #include "PluginEditor.h"
 #include "PluginProcessor.h"
+#include "analysis/BeatKeyDetector.h"
+#include "analysis/TempoDetector.h"
+#include "analysis/CaptureRing.h"
 #include <cstdio>
 
 using namespace keyglo;
@@ -320,6 +323,315 @@ int main()
             e2->setSize (Design::width, Design::height);
         }
         check (true, "editor open/close cycles survive");
+    }
+
+    // =======================================================================
+    //  Milestone 2 - beat analysis engine, ground-truth fixtures
+    // =======================================================================
+
+    // Chord-loop synthesiser: sustained triads (3 harmonics each) over a bass
+    // drone, tonic chord weighted double. All deterministic.
+    struct Chord { float notes[3]; };
+    auto renderLoop = [] (const std::vector<Chord>& chords, float bassHz,
+                          double seconds, double sr, double detuneCents) -> std::vector<float>
+    {
+        const double ratio = std::pow (2.0, detuneCents / 1200.0);
+        const int n = (int) (sr * seconds);
+        std::vector<float> out ((size_t) n, 0.0f);
+        const double chordLen = seconds / (double) chords.size();
+
+        for (size_t c = 0; c < chords.size(); ++c)
+        {
+            const int start = (int) (sr * chordLen * (double) c);
+            const int end = juce::jmin (n, (int) (sr * chordLen * (double) (c + 1)));
+            for (float note : chords[c].notes)
+            {
+                if (note <= 0.0f)
+                    continue;
+                for (int h = 1; h <= 3; ++h)
+                {
+                    const double f = note * ratio * h;
+                    const double amp = 0.16 / h;
+                    for (int i = start; i < end; ++i)
+                        out[(size_t) i] += (float) (amp * std::sin (juce::MathConstants<double>::twoPi
+                                                                      * f * (i - start) / sr));
+                }
+            }
+        }
+        // Bass drone (root evidence).
+        for (int i = 0; i < n; ++i)
+            out[(size_t) i] += (float) (0.30 * std::sin (juce::MathConstants<double>::twoPi
+                                                           * bassHz * ratio * i / sr));
+        return out;
+    };
+
+    // F# natural minor: i (x2, tonic emphasis), VI, iv, VII over an F#1 drone.
+    const std::vector<Chord> fsharpMinor = {
+        { { 92.5f, 110.0f, 138.59f } },      // F#m
+        { { 92.5f, 110.0f, 138.59f } },
+        { { 146.83f, 185.0f, 220.0f } },     // D
+        { { 123.47f, 146.83f, 185.0f } },    // Bm
+        { { 164.81f, 207.65f, 246.94f } },   // E
+        { { 92.5f, 110.0f, 138.59f } },      // F#m
+    };
+    // A major: I (x2), IV, V over an A1 drone.
+    const std::vector<Chord> aMajor = {
+        { { 110.0f, 138.59f, 164.81f } },    // A
+        { { 110.0f, 138.59f, 164.81f } },
+        { { 146.83f, 185.0f, 220.0f } },     // D
+        { { 164.81f, 207.65f, 246.94f } },   // E
+        { { 110.0f, 138.59f, 164.81f } },    // A
+    };
+
+    {
+        const auto audio = renderLoop (fsharpMinor, 46.25f, 10.0, 44100.0, 0.0);
+        const auto r = BeatKeyDetector::analyse (audio.data(), (int) audio.size(), 44100.0);
+        check (r.reliable, "F# minor loop: reliable");
+        check (r.rootPc == 6 && r.minor,
+               "F# minor loop detected as F# minor (got " + r.keyName() + " " + r.scaleName()
+                 + ", conf " + juce::String (r.confidence, 2) + ")");
+        checkNear (r.tuningCents, 0.0, 6.0, "F# minor loop: tuning near zero");
+        check (r.confidence > 0.5f, "F# minor loop: confident ("
+                 + juce::String (r.confidence, 2) + ")");
+    }
+
+    {
+        const auto audio = renderLoop (aMajor, 55.0f, 10.0, 44100.0, 0.0);
+        const auto r = BeatKeyDetector::analyse (audio.data(), (int) audio.size(), 44100.0);
+        check (r.reliable && r.rootPc == 9 && ! r.minor,
+               "A major loop detected as A major (got " + r.keyName() + " " + r.scaleName() + ")");
+    }
+
+    {
+        // The relative-key tie: A-major chord material over an F#1 drone.
+        // The bass register is the tonic evidence; expect F# minor.
+        const auto audio = renderLoop (aMajor, 46.25f, 10.0, 44100.0, 0.0);
+        const auto r = BeatKeyDetector::analyse (audio.data(), (int) audio.size(), 44100.0);
+        check (r.reliable && r.rootPc == 6 && r.minor,
+               "A-major chords over F# bass resolve to F# minor (got "
+                 + r.keyName() + " " + r.scaleName() + ")");
+    }
+
+    {
+        // +30 cents global detune must be measured, and the key still found.
+        const auto audio = renderLoop (fsharpMinor, 46.25f, 10.0, 44100.0, 30.0);
+        const auto r = BeatKeyDetector::analyse (audio.data(), (int) audio.size(), 44100.0);
+        checkNear (r.tuningCents, 30.0, 10.0, "detuned loop: +30 cents measured");
+        check (r.reliable && r.rootPc == 6 && r.minor,
+               "detuned loop still detects F# minor (got " + r.keyName() + " " + r.scaleName() + ")");
+    }
+
+    {
+        // A produced groove, not clean sines: 808 bass with kick AM/FM,
+        // triads with a 2nd harmonic, filtered-noise bed, chords changing
+        // per bar at 148 BPM (the uishot signal feed, pinned as a fixture -
+        // this exact material once failed the tonality gate).
+        juce::Random random (0x4b47);
+        const double sr = 48000.0;
+        const int n = (int) (sr * 8.5);
+        std::vector<float> groove ((size_t) n, 0.0f);
+        double bassPhase = 0.0, chordPhase[3] = { 0.0, 0.0, 0.0 };
+        float lp = 0.0f;
+        static const double bassHz[4] = { 46.25, 36.71, 61.74, 41.20 };
+        static const double triads[4][3] = { { 185.0, 220.0, 277.18 },
+                                             { 146.83, 185.0, 220.0 },
+                                             { 123.47, 146.83, 185.0 },
+                                             { 164.81, 207.65, 246.94 } };
+        for (int i = 0; i < n; ++i)
+        {
+            const double t = i / sr;
+            const double beatLen = 60.0 / 148.0;
+            const int chord = ((int) (t / (beatLen * 4.0))) % 4;
+            const float kick = (float) std::exp (-std::fmod (t, beatLen) * 9.0);
+            bassPhase += 2.0 * juce::MathConstants<double>::pi
+                           * (bassHz[chord] + 7.0 * kick) / sr;
+            float v = 0.48f * (0.45f + 0.55f * kick) * (float) std::sin (bassPhase);
+            for (int c = 0; c < 3; ++c)
+            {
+                chordPhase[c] += 2.0 * juce::MathConstants<double>::pi * triads[chord][c] / sr;
+                v += 0.16f * (float) std::sin (chordPhase[c])
+                   + 0.05f * (float) std::sin (2.0 * chordPhase[c]);
+            }
+            const float white = random.nextFloat() * 2.0f - 1.0f;
+            lp += 0.12f * (white - lp);
+            groove[(size_t) i] = v + 0.035f * lp;
+        }
+
+        const auto r = BeatKeyDetector::analyse (groove.data(), n, sr);
+        check (r.reliable, "produced groove: reliable despite kick modulation + noise bed"
+                 " (peakShare " + juce::String (r.gatePeakShare, 3)
+                 + ", spread " + juce::String (r.gateSpread, 2)
+                 + ", bestR " + juce::String (r.gateBestR, 2)
+                 + ", conf " + juce::String (r.confidence, 2) + ")");
+        check (r.rootPc == 6 && r.minor,
+               "produced groove detected as F# minor (got " + r.keyName() + " "
+                 + r.scaleName() + ", conf " + juce::String (r.confidence, 2) + ")");
+
+        const auto t = TempoDetector::analyse (groove.data(), n, sr);
+        check (t.reliable && std::abs (t.bpm - 148.0f) < 2.0f,
+               "produced groove tempo reports the beat level, 148 (got "
+                 + juce::String (t.bpm, 1) + ")");
+    }
+
+    {
+        // Noise + clicks have no key. Honesty gate: reliable must be false.
+        juce::Random rng (0x4b47);
+        std::vector<float> noise ((size_t) (44100 * 8), 0.0f);
+        for (auto& v : noise)
+            v = 0.4f * (rng.nextFloat() * 2.0f - 1.0f);
+        const auto r = BeatKeyDetector::analyse (noise.data(), (int) noise.size(), 44100.0);
+        check (! r.reliable, "white noise: no reliable key");
+        std::printf ("        [noise gates: peakShare %.3f inScale %.2f bestR %.2f conf %.2f]\n",
+                     r.gatePeakShare, r.gateSpread, r.gateBestR, r.confidence);
+    }
+
+    // --- tempo --------------------------------------------------------------
+    auto renderClicks = [] (double bpm, double seconds, double sr) -> std::vector<float>
+    {
+        juce::Random rng (0x7717);
+        const int n = (int) (sr * seconds);
+        std::vector<float> out ((size_t) n, 0.0f);
+        const double beatLen = 60.0 / bpm * sr;
+        for (double pos = 0.0; pos < n - 300; pos += beatLen)
+            for (int i = 0; i < 260; ++i)
+                out[(size_t) ((int) pos + i)] += 0.8f * (rng.nextFloat() * 2.0f - 1.0f)
+                                                   * (float) std::exp (-i / 60.0);
+        return out;
+    };
+
+    for (const double wantBpm : { 96.0, 120.0, 148.0 })
+    {
+        const auto clicks = renderClicks (wantBpm, 12.0, 44100.0);
+        const auto t = TempoDetector::analyse (clicks.data(), (int) clicks.size(), 44100.0);
+        check (t.reliable, juce::String (wantBpm, 0) + " BPM clicks: reliable");
+
+        bool anyCandidate = false;
+        for (auto c : t.candidates)
+            anyCandidate = anyCandidate || std::abs (c - wantBpm) < 2.0f;
+        check (anyCandidate,
+               juce::String (wantBpm, 0) + " BPM within 2 of a candidate (main "
+                 + juce::String (t.bpm, 1) + ")");
+
+        const bool mainOk = std::abs (t.bpm - wantBpm) < 2.0f
+                          || std::abs (t.bpm - wantBpm * 2.0) < 3.0f
+                          || std::abs (t.bpm - wantBpm * 0.5) < 1.5f;
+        check (mainOk, juce::String (wantBpm, 0) + " BPM main estimate at a valid metrical level (got "
+                 + juce::String (t.bpm, 1) + ")");
+    }
+
+    {
+        std::vector<float> silence ((size_t) (44100 * 8), 0.0f);
+        const auto t = TempoDetector::analyse (silence.data(), (int) silence.size(), 44100.0);
+        check (! t.reliable, "silence: no tempo claimed");
+    }
+
+    // --- capture ring -------------------------------------------------------
+    {
+        CaptureRing ring;
+        ring.prepare (48000.0, 2);
+
+        // Perfectly out-of-phase stereo: mono sum cancels, but the honest
+        // silence gate must still see the energy per channel.
+        juce::AudioBuffer<float> buf (2, 4800);
+        for (int i = 0; i < 4800; ++i)
+        {
+            const float v = 0.5f * std::sin (juce::MathConstants<float>::twoPi * 220.0f * i / 48000.0f);
+            buf.setSample (0, i, v);
+            buf.setSample (1, i, -v);
+        }
+        for (int b = 0; b < 20; ++b)
+            ring.write (buf);
+
+        std::vector<float> mono;
+        float channelRms = 0.0f;
+        const int got = ring.readLatestMono (mono, 48000, channelRms);
+        check (got == 48000, "ring returns requested history");
+        check (channelRms > 0.3f, "out-of-phase stereo is NOT gated as silence (rms "
+                 + juce::String (channelRms, 3) + ")");
+        float monoPeak = 0.0f;
+        for (auto v : mono) monoPeak = juce::jmax (monoPeak, std::abs (v));
+        check (monoPeak < 0.01f, "mono sum of out-of-phase stereo cancels as expected");
+    }
+
+    // --- end-to-end: processor feeds ring, coordinator publishes ------------
+    {
+        KeyGloProcessor p;
+        p.setPlayConfigDetails (2, 2, 44100.0, 512);
+        p.prepareToPlay (44100.0, 512);
+
+        const auto audio = renderLoop (fsharpMinor, 46.25f, 9.0, 44100.0, 0.0);
+        juce::AudioBuffer<float> block (2, 512);
+        juce::MidiBuffer midi;
+        for (int start = 0; start + 512 <= (int) audio.size(); start += 512)
+        {
+            for (int i = 0; i < 512; ++i)
+            {
+                block.setSample (0, i, audio[(size_t) (start + i)]);
+                block.setSample (1, i, audio[(size_t) (start + i)]);
+            }
+            p.processBlock (block, midi);
+        }
+
+        p.analyseCaptureNow();
+        bool published = false;
+        for (int tries = 0; tries < 300 && ! published; ++tries)
+        {
+            juce::Thread::sleep (50);
+            auto snap = p.getDisplayModel().get();
+            published = snap->hasBeatResult && ! snap->analyzing;
+        }
+        auto snap = p.getDisplayModel().get();
+        check (published, "live-ring analysis publishes a result");
+        check (! snap->noReliableKey && snap->key == "F#" && snap->scale == "Minor",
+               "live-ring analysis finds F# minor (got " + snap->key + " " + snap->scale + ")");
+        check (snap->sourceName == "LIVE INPUT", "live result labelled LIVE INPUT");
+
+        // Fast lane published real visuals with bass energy present.
+        auto live = p.getDisplayModel().getLive();
+        check (live->active, "live visuals active after audio");
+        check (live->chroma[6] > 0.5f, "live chroma sees F# energy ("
+                 + juce::String (live->chroma[6], 2) + ")");
+    }
+
+    // --- file path end-to-end ----------------------------------------------
+    {
+        const auto audio = renderLoop (aMajor, 55.0f, 9.0, 44100.0, 0.0);
+        auto file = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                       .getChildFile ("keyglo-test-amajor.wav");
+        file.deleteFile();
+        {
+            juce::WavAudioFormat wav;
+            auto stream = file.createOutputStream();
+            std::unique_ptr<juce::AudioFormatWriter> writer (
+                wav.createWriterFor (stream.get(), 44100.0, 1, 16, {}, 0));
+            check (writer != nullptr, "test wav writer created");
+            if (writer != nullptr)
+            {
+                stream.release();
+                juce::AudioBuffer<float> b (1, (int) audio.size());
+                for (int i = 0; i < (int) audio.size(); ++i)
+                    b.setSample (0, i, audio[(size_t) i]);
+                writer->writeFromAudioSampleBuffer (b, 0, b.getNumSamples());
+            }
+        }
+
+        KeyGloProcessor p;
+        p.analyseFileAsync (file);
+        bool published = false;
+        for (int tries = 0; tries < 300 && ! published; ++tries)
+        {
+            juce::Thread::sleep (50);
+            auto snap = p.getDisplayModel().get();
+            published = snap->hasBeatResult && ! snap->analyzing;
+        }
+        auto snap = p.getDisplayModel().get();
+        check (published, "file analysis publishes a result");
+        check (! snap->noReliableKey && snap->key == "A" && snap->scale == "Major",
+               "file analysis finds A major (got " + snap->key + " " + snap->scale + ")");
+        check (snap->sourceName == file.getFileName(), "file result carries the file name");
+        check (snap->bpm < 1.0f || snap->bpmSource != "HOST",
+               "file BPM never claims host tempo");
+        file.deleteFile();
     }
 
     std::printf ("%d checks, %d failed\n", checksRun, checksFailed);
