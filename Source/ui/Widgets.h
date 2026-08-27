@@ -147,7 +147,24 @@ public:
     {
         glow.startRipple (e.position);
         startAnim();
+        dragFired = false;
         juce::Button::mouseDown (e);
+    }
+
+    // Optional drag-out gesture (COPY SCALE drags a MIDI file into the DAW).
+    // Fires once per gesture after a small threshold; click behaviour is
+    // untouched.
+    std::function<void()> onDragStart;
+
+    void mouseDrag (const juce::MouseEvent& e) override
+    {
+        if (onDragStart != nullptr && ! dragFired
+             && e.getDistanceFromDragStart() > 8)
+        {
+            dragFired = true;
+            onDragStart();
+        }
+        juce::Button::mouseDrag (e);
     }
 
 private:
@@ -166,6 +183,7 @@ private:
     juce::Colour accent    = tokens::cyan;
     float fontHeight = 14.0f;
     HoverGlow glow;
+    bool dragFired = false;
 };
 
 // -----------------------------------------------------------------------------

@@ -20,6 +20,8 @@
 #include "analysis/SamplePitchDetector.h"
 #include "state/ArtistProfileStore.h"
 #include "dsp/PreviewPitchShifter.h"
+#include "presets/PresetManager.h"
+#include "ui/AutoTuneSetupPanel.h"
 #include <cstdio>
 
 using namespace keyglo;
@@ -87,7 +89,8 @@ int main()
         const Expect expects[] = {
             { pid::rangeSense, 0.72f }, { pid::keySense, 0.85f },
             { pid::analysisSmooth, 0.6f }, { pid::previewMix, 0.4f },
-            { pid::fineTuneCents, 4.0f }, { pid::outputGainDb, -2.0f },
+            { pid::fineTuneCents, 0.0f },   // deviation: json's +4 is a demo value
+            { pid::outputGainDb, -2.0f },
         };
         for (const auto& e : expects)
         {
@@ -103,7 +106,9 @@ int main()
         if (transpose != nullptr)
         {
             check (transpose->choices.size() == 9, "transpose has 9 choices");
-            check (transpose->getIndex() == 2, "transpose default is -2");
+            // Documented deviation from parameters.json (default "-2"):
+            // a fresh instance must never transpose the program.
+            check (transpose->getIndex() == 4, "transpose default is Original");
             check (transpose->choices[4] == "Original", "choice 4 is Original");
         }
 
@@ -1460,6 +1465,190 @@ int main()
                    "SOLO off returns to the program path");
         }
     }
+
+    // =======================================================================
+    //  Product milestone - presets, undo, MIDI scale export
+    // =======================================================================
+
+    // Sandbox the user-preset folder for every preset test.
+    auto presetSandbox = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                           .getChildFile ("KeyGloTestPresets");
+    presetSandbox.deleteRecursively();
+    PresetManager::dirOverride() = presetSandbox;
+
+    {
+        KeyGloProcessor p;
+        auto& bank = p.getPresets();
+
+        check ((int) bank.all().size() == PresetManager::factoryCount,
+               "six factory presets, no user presets yet");
+        check (bank.currentName() == "Male Rap Hook Match",
+               "fresh instance sits on preset 0");
+        check (! bank.isModified(), "fresh instance is unmodified");
+
+        // Preset 0 must equal the parameter defaults - a fresh instance and
+        // 'load preset 0' are the same state.
+        for (const auto& id : PresetManager::creativeParams())
+        {
+            auto* param = p.getAPVTS().getParameter (id);
+            checkNear (param->getValue(), param->getDefaultValue(), 1.0e-4,
+                       "preset 0 matches default: " + id);
+        }
+
+        // Stepping applies values and wraps.
+        bank.step (1);
+        check (bank.currentName() == "Female R&B Range", "step forward");
+        checkNear (p.getAPVTS().getRawParameterValue (pid::rangeSense)->load(),
+                   0.80, 1.0e-3, "preset 2 applied rangeSense");
+        bank.step (-2);
+        check (bank.currentName() == "Producer Quick Check", "step wraps backward");
+
+        // Loading a preset never touches the excluded parameters.
+        setParam (p, pid::outputGainDb, -10.0f);
+        setParam (p, pid::pluginBypass, 1.0f);
+        bank.select (0);
+        checkNear (p.getAPVTS().getRawParameterValue (pid::outputGainDb)->load(),
+                   -10.0, 1.0e-3, "preset load leaves the output trim alone");
+        check (p.getAPVTS().getRawParameterValue (pid::pluginBypass)->load() > 0.5f,
+               "preset load leaves bypass alone");
+
+        // Modified tracking: tweak a covered knob -> modified; back -> clean.
+        setParam (p, pid::keySense, 0.5f);
+        check (bank.isModified(), "tweaking a covered param marks modified");
+        setParam (p, pid::keySense, 0.85f);
+        check (! bank.isModified(), "restoring the value clears modified");
+
+        // User preset save + reload.
+        setParam (p, pid::keySense, 0.33f);
+        check (bank.saveCurrentAs ("Test Vibe"), "user preset saves");
+        check (bank.currentName() == "Test Vibe" && ! bank.currentIsFactory(),
+               "save selects the new user preset");
+        check (! bank.isModified(), "freshly saved preset is unmodified");
+
+        bank.select (0);
+        checkNear (p.getAPVTS().getRawParameterValue (pid::keySense)->load(),
+                   0.85, 1.0e-3, "factory preset restores keySense");
+        bank.restoreByName ("Test Vibe");
+        bank.select (bank.getCurrentIndex());
+        checkNear (p.getAPVTS().getRawParameterValue (pid::keySense)->load(),
+                   0.33, 1.0e-3, "user preset round-trips its values");
+
+        // Awkward names stay inside the folder.
+        check (PresetManager::fileFor ("../../evil").getParentDirectory()
+                 == PresetManager::userDir(),
+               "preset names cannot escape the presets directory");
+    }
+
+    {
+        // Session restore: the preset name survives the host state, and a
+        // modified preset comes back modified.
+        KeyGloProcessor a;
+        a.getPresets().rebuildList();
+        a.getPresets().restoreByName ("Test Vibe");
+        a.getPresets().select (a.getPresets().getCurrentIndex());
+        setParam (a, pid::rangeSense, 0.11f);   // modify it
+
+        juce::MemoryBlock state;
+        a.getStateInformation (state);
+
+        KeyGloProcessor b;
+        b.setStateInformation (state.getData(), (int) state.getSize());
+        check (b.getPresets().currentName() == "Test Vibe",
+               "preset name restores with the session");
+        check (b.getPresets().isModified(),
+               "a modified preset restores as modified");
+        checkNear (b.getAPVTS().getRawParameterValue (pid::rangeSense)->load(),
+                   0.11, 1.0e-3, "the modified value itself restores");
+        check (! b.getUndoManager().canUndo(),
+               "session restore is not an undoable step");
+    }
+
+    {
+        // Undo/redo across parameter changes and preset loads.
+        KeyGloProcessor p;
+        auto& um = p.getUndoManager();
+
+        // captureUndoPoint() is what the UI timer calls: parameter moves are
+        // banked into one step per interval.
+        setParam (p, pid::keySense, 0.2f);
+        p.getPresets().captureUndoPoint();
+        setParam (p, pid::rangeSense, 0.9f);
+        p.getPresets().captureUndoPoint();
+
+        check (um.canUndo(), "changes are undoable");
+        um.undo();
+        p.getPresets().resyncUndoBaseline();
+        checkNear (p.getAPVTS().getRawParameterValue (pid::rangeSense)->load(),
+                   0.72, 1.0e-3, "undo restores the last change");
+        checkNear (p.getAPVTS().getRawParameterValue (pid::keySense)->load(),
+                   0.2, 1.0e-3, "undo leaves the earlier change");
+        um.redo();
+        p.getPresets().resyncUndoBaseline();
+        checkNear (p.getAPVTS().getRawParameterValue (pid::rangeSense)->load(),
+                   0.9, 1.0e-3, "redo re-applies it");
+
+        // Several moves inside one interval collapse to a single step.
+        setParam (p, pid::previewMix, 0.1f);
+        setParam (p, pid::previewMix, 0.2f);
+        setParam (p, pid::previewMix, 0.3f);
+        p.getPresets().captureUndoPoint();
+        um.undo();
+        p.getPresets().resyncUndoBaseline();
+        checkNear (p.getAPVTS().getRawParameterValue (pid::previewMix)->load(),
+                   0.4, 1.0e-3, "a drag inside one interval is ONE undo step");
+
+        p.getPresets().select (4);   // 808 Tune Focus
+        checkNear (p.getAPVTS().getRawParameterValue (pid::keySense)->load(),
+                   0.95, 1.0e-3, "preset applied");
+        um.undo();
+        p.getPresets().resyncUndoBaseline();
+        checkNear (p.getAPVTS().getRawParameterValue (pid::keySense)->load(),
+                   0.2, 1.0e-3, "a preset load is one undoable step");
+    }
+
+    // --- MIDI scale export --------------------------------------------------
+    {
+        juce::StringArray fsMinor { "F#", "G#", "A", "B", "C#", "D", "E" };
+        auto file = AutoTuneSetupPanel::writeScaleMidiFile ("F#", "Minor", fsMinor);
+        check (file.existsAsFile(), "scale MIDI file written");
+
+        juce::FileInputStream in (file);
+        juce::MidiFile midi;
+        check (in.openedOk() && midi.readFrom (in), "scale MIDI file parses");
+        midi.convertTimestampTicksToSeconds();
+
+        std::vector<int> played;
+        if (midi.getNumTracks() > 0)
+        {
+            const auto* track = midi.getTrack (0);
+            for (int i = 0; i < track->getNumEvents(); ++i)
+                if (track->getEventPointer (i)->message.isNoteOn())
+                    played.push_back (track->getEventPointer (i)->message.getNoteNumber());
+        }
+        check ((int) played.size() == 8, "one octave: 8 notes (7 + top root), got "
+                 + juce::String ((int) played.size()));
+        if (played.size() == 8)
+        {
+            check (played.front() % 12 == 6 && played.back() % 12 == 6,
+                   "starts and ends on the root");
+            check (played.back() - played.front() == 12, "spans exactly one octave");
+            bool ascending = true, inScale = true;
+            const bool fsMinorPcs[12] = { false, true, true, false, true, false,
+                                          true,  false, true, true,  false, true };
+            for (size_t i = 0; i < played.size(); ++i)
+            {
+                if (i > 0 && played[i] <= played[i - 1])
+                    ascending = false;
+                inScale = inScale && fsMinorPcs[played[i] % 12];
+            }
+            check (ascending, "notes ascend");
+            check (inScale, "every note is in F# minor");
+        }
+        file.deleteFile();
+    }
+
+    presetSandbox.deleteRecursively();
+    PresetManager::dirOverride() = juce::File();
 
     std::printf ("%d checks, %d failed\n", checksRun, checksFailed);
     return checksFailed == 0 ? 0 : 1;

@@ -3,7 +3,9 @@
 
     The logo is the supplied image, cropped to opaque bounds at load and
     aspect-fitted into layout::logo (LOGO_USAGE_GUIDE.md forbids typesetting
-    the name). Preset navigation is display-only until the preset milestone.
+    the name). The preset browser, Save, Undo and Redo are live from the
+    product milestone: prev/next step the real bank, the field shows the
+    current preset with a modified dot, Save writes a user preset.
 */
 
 #pragma once
@@ -15,7 +17,8 @@
 namespace keyglo
 {
 
-class HeaderComponent : public juce::Component
+class HeaderComponent : public juce::Component,
+                        private juce::Timer
 {
 public:
     explicit HeaderComponent (KeyGloProcessor& p) : processor (p)
@@ -24,13 +27,33 @@ public:
 
         addAndMakeVisible (prevButton);
         addAndMakeVisible (nextButton);
-        prevButton.onClick = [this] { step (-1); };
-        nextButton.onClick = [this] { step (1); };
+        prevButton.onClick = [this] { processor.getPresets().step (-1); repaint(); };
+        nextButton.onClick = [this] { processor.getPresets().step (1); repaint(); };
 
         for (auto* b : { &saveButton, &settingsButton, &helpButton, &undoButton, &redoButton })
             addAndMakeVisible (*b);
 
         settingsButton.onClick = [this] { showSettingsMenu(); };
+        saveButton.onClick = [this] { savePresetPrompt(); };
+        undoButton.onClick = [this]
+        {
+            processor.getPresets().captureUndoPoint();   // bank any pending drift first
+            processor.getUndoManager().undo();
+            processor.getPresets().resyncUndoBaseline();
+            repaint();
+        };
+        redoButton.onClick = [this]
+        {
+            processor.getUndoManager().redo();
+            processor.getPresets().resyncUndoBaseline();
+            repaint();
+        };
+
+        // Slow poll: undo/redo enablement + the modified dot. Also gives the
+        // undo history its transaction boundaries - JUCE's recommended
+        // pattern is a periodic beginNewTransaction, so knob drags coalesce
+        // per interval instead of one step per sample value.
+        startTimerHz (4);
 
         addAndMakeVisible (powerButton);
         powerButton.setCircled (true, tokens::cyan);
@@ -101,23 +124,36 @@ public:
             g.setColour (tokens::bg1);
             g.fillRoundedRectangle (nameBox.toFloat(), 8.0f);
         }
+        auto& bank = processor.getPresets();
         g.setColour (tokens::white);
         g.setFont (Fonts::make (19.0f, true));
-        g.drawText (presetNames[presetIndex], nameBox, juce::Justification::centred);
+        g.drawText (bank.currentName(), nameBox.reduced (18, 0),
+                    juce::Justification::centred);
 
-        // "PRESET" caption + page dots below the field.
+        // Modified marker: a small cyan dot at the field's right edge when
+        // the current parameters have drifted from the loaded preset.
+        if (bank.isModified())
+        {
+            g.setColour (tokens::cyan);
+            g.fillEllipse ((float) nameBox.getRight() - 16.0f,
+                           (float) nameBox.getCentreY() - 2.5f, 5.0f, 5.0f);
+        }
+
+        // "PRESET" caption + page dots below the field. The dots stay the
+        // mockup's six factory pages; a user preset lights none of them.
         g.setColour (tokens::muted2);
         g.setFont (Fonts::make (10.0f, true).withExtraKerningFactor (0.22f));
         g.drawText ("PRESET", nameBox.withY (nameBox.getBottom() - 3).withHeight (12),
                     juce::Justification::centred);
 
-        const int dotCount = (int) presetNames.size();
+        const int dotCount = PresetManager::factoryCount;
         const int dotSpacing = 15;
         int dx = nameBox.getCentreX() - ((dotCount - 1) * dotSpacing) / 2;
         const int dy = nameBox.getBottom() + 12;
+        const int litDot = bank.currentIsFactory() ? bank.getCurrentIndex() : -1;
         for (int i = 0; i < dotCount; ++i)
         {
-            g.setColour (i == presetIndex ? tokens::cyan : tokens::muted2.withAlpha (0.55f));
+            g.setColour (i == litDot ? tokens::cyan : tokens::muted2.withAlpha (0.55f));
             g.fillEllipse ((float) (dx - 2), (float) (dy - 2), 4.5f, 4.5f);
             dx += dotSpacing;
         }
@@ -163,11 +199,46 @@ private:
         bool forward;
     };
 
-    void step (int delta)
+    void savePresetPrompt()
     {
-        const int n = (int) presetNames.size();
-        presetIndex = (presetIndex + delta + n) % n;
-        repaint();
+        auto* editor = new juce::AlertWindow ("Save Preset",
+                                              "Name this preset:",
+                                              juce::MessageBoxIconType::NoIcon);
+        auto& bank = processor.getPresets();
+        editor->addTextEditor ("name", bank.currentIsFactory() ? juce::String ("My Preset")
+                                                               : bank.currentName(), {});
+        editor->addButton ("Save", 1, juce::KeyPress (juce::KeyPress::returnKey));
+        editor->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+        editor->enterModalState (true, juce::ModalCallbackFunction::create (
+            [this, editor] (int result)
+            {
+                const auto name = editor->getTextEditorContents ("name").trim();
+                std::unique_ptr<juce::AlertWindow> owned (editor);
+                if (result == 1 && name.isNotEmpty())
+                {
+                    processor.getPresets().saveCurrentAs (name);
+                    repaint();
+                }
+            }), false);
+    }
+
+    void timerCallback() override
+    {
+        // Coalesce parameter moves into one undoable step per interval, and
+        // keep the undo/redo buttons + modified dot current.
+        processor.getPresets().captureUndoPoint();
+
+        auto& um = processor.getUndoManager();
+        undoButton.setEnabled (um.canUndo());
+        redoButton.setEnabled (um.canRedo());
+
+        const bool modified = processor.getPresets().isModified();
+        if (modified != shownModified)
+        {
+            shownModified = modified;
+            repaint();
+        }
     }
 
     void showSettingsMenu()
@@ -200,11 +271,7 @@ private:
     IconButton redoButton     { "Redo",     "redo",     "Redo" };
     IconButton powerButton    { "Power",    "power",    {}, tokens::cyan, tokens::cyan };
     std::unique_ptr<juce::ParameterAttachment> powerAttachment;
-
-    std::vector<juce::String> presetNames { "Male Rap Hook Match", "Female R&B Range",
-                                            "Melodic Rap Fit", "Soul Hook Builder",
-                                            "808 Tune Focus", "Producer Quick Check" };
-    int presetIndex = 0;
+    bool shownModified = false;
 };
 
 } // namespace keyglo

@@ -79,6 +79,15 @@ int main (int argc, char** argv)
         demoSnap->hasBeatResult = true;
         demoSnap->sourceName = "DEMO";
         processor.getDisplayModel().publish (std::move (demoSnap));
+
+        // The approved reference shows -2 selected and +4 cents dialled in.
+        // Those are the mockup's demo VALUES, not the plugin's defaults
+        // (which are Original / 0 cents, so a fresh instance never
+        // transposes) - the demo shot sets them explicitly.
+        if (auto* t = processor.getAPVTS().getParameter (pid::transposeSemitones))
+            t->setValueNotifyingHost (t->convertTo0to1 (2.0f));      // "-2"
+        if (auto* f = processor.getAPVTS().getParameter (pid::fineTuneCents))
+            f->setValueNotifyingHost (f->convertTo0to1 (4.0f));
     }
 
     std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditor());

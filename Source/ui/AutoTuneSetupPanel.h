@@ -33,7 +33,10 @@ public:
         copyButton.setLabel ("COPY SCALE");
         copyButton.setFontHeight (13.0f);
         copyButton.setIconTint (tokens::text);
+        copyButton.setTooltip ("Click: copy the scale setup as text. "
+                               "Drag into your DAW: a one-octave MIDI scale file.");
         copyButton.onClick = [this] { copyScaleToClipboard(); };
+        copyButton.onDragStart = [this] { dragScaleMidi(); };
         addAndMakeVisible (copyButton);
 
         refreshNoteChips();
@@ -218,6 +221,78 @@ private:
 
         g.setColour (tokens::stroke);
         g.drawRect (r, 1);
+    }
+
+public:
+    // A one-octave ascending scale as a standard MIDI file (the spec's
+    // "may also export a one-octave MIDI scale file"), written to the temp
+    // folder and dragged into the host. Public + static: the test suite
+    // verifies the generated file parses, ascends and stays in scale.
+    static juce::File writeScaleMidiFile (const juce::String& keyName,
+                                          const juce::String& scaleName,
+                                          const juce::StringArray& noteNames)
+    {
+        if (noteNames.isEmpty())
+            return {};
+
+        int rootPc = 0;
+        for (int i = 0; i < 12; ++i)
+            if (noteNames[0] == notes::names[i]) { rootPc = i; break; }
+
+        // Ascending pitch classes from the root, one octave, top root added.
+        std::vector<int> midiNotes;
+        int previous = 60 + rootPc;               // root in the C4 octave
+        midiNotes.push_back (previous);
+        for (int i = 1; i < noteNames.size(); ++i)
+        {
+            int pc = 0;
+            for (int j = 0; j < 12; ++j)
+                if (noteNames[i] == notes::names[j]) { pc = j; break; }
+            int note = (previous / 12) * 12 + pc;
+            while (note <= previous)
+                note += 12;
+            midiNotes.push_back (note);
+            previous = note;
+        }
+        midiNotes.push_back (midiNotes.front() + 12);
+
+        const int tpq = 960;
+        juce::MidiMessageSequence track;
+        track.addEvent (juce::MidiMessage::tempoMetaEvent (500000), 0.0);   // 120 BPM
+        double tick = 0.0;
+        for (int note : midiNotes)
+        {
+            track.addEvent (juce::MidiMessage::noteOn (1, note, (juce::uint8) 100), tick);
+            track.addEvent (juce::MidiMessage::noteOff (1, note), tick + tpq - 20);
+            tick += tpq;
+        }
+        track.updateMatchedPairs();
+
+        juce::MidiFile midiFile;
+        midiFile.setTicksPerQuarterNote (tpq);
+        midiFile.addTrack (track);
+
+        auto file = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                      .getChildFile ("KeyGlo " + keyName + " " + scaleName + " scale.mid");
+        file.deleteFile();
+        juce::FileOutputStream stream (file);
+        if (! stream.openedOk() || ! midiFile.writeTo (stream))
+            return {};
+        stream.flush();
+        return file;
+    }
+
+private:
+    void dragScaleMidi()
+    {
+        const auto shown = shownKeyScale();
+        if (shown.first == "--")
+            return;
+
+        auto file = writeScaleMidiFile (shown.first, shown.second, allowedNotes());
+        if (file.existsAsFile())
+            juce::DragAndDropContainer::performExternalDragDropOfFiles (
+                { file.getFullPathName() }, false, &copyButton);
     }
 
     void copyScaleToClipboard()

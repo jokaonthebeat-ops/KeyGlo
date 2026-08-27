@@ -8,14 +8,22 @@ local, permanently free, no login.
 Built from the approved handoff pack in `Spec/` (KeyGlo_UI_Assets_v1.0).
 `Spec/09_JUCE_HANDOFF/CLAUDE_MASTER_BUILD_PROMPT.md` is the product spec.
 
-## Status
+## Status — 0.9.5, feature complete
 
-- **Milestone 1 - exact animated UI**: in progress (0.9.0). Full 1491x1055
-  interface from the approved mockup, animated from the pack's placeholder
-  dataset; honest pass-through audio path with output trim + peak meters.
-- Milestone 2 - beat analysis engine (chroma/HPCP key detection, BPM, tuning).
-- Milestone 3 - vocal range profiling + hook fit scoring.
-- Milestone 4 - 808/sample tuning + preview transposition DSP.
+All four engine milestones plus the product milestone are done; every
+control in the interface runs on real analysis or real state.
+
+| Milestone | What it delivered | Report |
+|---|---|---|
+| 1 — Animated UI | The approved 1491x1055 interface, user-approved | `docs/UI-MILESTONE-REPORT.md` |
+| 2 — Beat analysis | Key, scale, BPM, tuning; honest "no reliable key" | `docs/ENGINE-MILESTONE-REPORT.md` |
+| 3 — Vocal & fit | Pitch tracking, range test, profiles, hook fit | `docs/VOCAL-MILESTONE-REPORT.md` |
+| 4 — 808 & preview | Sample tuning, Apply Tune, preview shifter | `docs/SAMPLE-TUNE-MILESTONE-REPORT.md` |
+| Product | Presets, undo/redo, save, MIDI scale export | `docs/PRODUCT-MILESTONE-REPORT.md` |
+
+`make test` = 212 checks, 0 failed. Remaining before 1.0: universal build →
+installer → notarisation (needs Apple credentials), and a human listen in a
+real DAW.
 
 ## Building (macOS, this machine)
 
@@ -55,7 +63,13 @@ for Windows later (same CMake route as MasterGlo - not built yet).
 
 ## Documented deviations from the mockup
 
-- Footer says `v0.9.0` (real version) and `LOCAL` instead of the mockup's
+- Footer shows the real version and `LOCAL` instead of the mockup's
   `ONLINE` - the spec promises a fully local product.
 - The mockup's stray `MOTE` text in Auto-Tune Setup (a typo artifact) is not
   reproduced; the panel renders KEY / SCALE / MODE.
+- **Defaults are Original / 0 cents**, not parameters.json's `-2` / `+4`:
+  those are the mockup's demo values, and as defaults they would transpose
+  the user's program unasked. The recommendation shows as a gold
+  `BEST: -2 ST` badge instead. `make uishot ARGS="out.png def demo"`
+  reproduces the mockup's values for reference shots.
+- Seven layout/geometry deviations are listed in the UI milestone report.

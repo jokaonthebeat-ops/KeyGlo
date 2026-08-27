@@ -18,6 +18,7 @@
 #include "analysis/AnalysisCoordinator.h"
 #include "dsp/PreviewPitchShifter.h"
 #include "dsp/SamplePreviewPlayer.h"
+#include "presets/PresetManager.h"
 
 namespace keyglo
 {
@@ -77,6 +78,10 @@ public:
     void analyseCaptureNow()                               { coordinator->analyseRingNow(); }
     bool isAnalysisBusy() const                            { return coordinator->isBusy(); }
 
+    // Presets + undo (product milestone). Message thread only.
+    PresetManager& getPresets()                            { return *presets; }
+    juce::UndoManager& getUndoManager()                    { return undoManager; }
+
     // 808 / sample engine (milestone 4).
     void analyseSampleAsync (const juce::File& f)          { coordinator->analyseSampleAsync (f); }
     void applyTuneAsync()                                  { coordinator->applyTuneAsync(); }
@@ -108,10 +113,12 @@ public:
 private:
     juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
 
+    juce::UndoManager undoManager;   // declared before apvts: the tree holds a pointer to it
     juce::AudioProcessorValueTreeState apvts;
     AnalysisDisplayModel displayModel;
     CaptureRing captureRing;
     std::unique_ptr<AnalysisCoordinator> coordinator;
+    std::unique_ptr<PresetManager> presets;
 
     juce::SmoothedValue<float> outputGain { 1.0f };
     std::atomic<float>* outputGainParam = nullptr;

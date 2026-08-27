@@ -8,8 +8,9 @@ KeyGloProcessor::KeyGloProcessor()
     : juce::AudioProcessor (BusesProperties()
                               .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                               .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
-      apvts (*this, nullptr, "KeyGloState", createLayout())
+      apvts (*this, &undoManager, "KeyGloState", createLayout())
 {
+    presets = std::make_unique<PresetManager> (apvts, &undoManager);
     outputGainParam = apvts.getRawParameterValue (pid::outputGainDb);
     bypassParam     = apvts.getRawParameterValue (pid::pluginBypass);
     previewMixParam = apvts.getRawParameterValue (pid::previewMix);
@@ -53,9 +54,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout KeyGloProcessor::createLayou
         juce::AudioParameterFloatAttributes{}.withStringFromValueFunction (
             [] (float v, int) { return juce::String (juce::roundToInt (v * 100.0f)) + "%"; })));
 
+    // Default 0, not parameters.json's demo value of +4: a fresh instance
+    // must never detune the preview on its own (same rule as the shifter's
+    // arming gate). Documented deviation.
     layout.add (std::make_unique<juce::AudioParameterFloat> (
         juce::ParameterID { pid::fineTuneCents, 1 }, "Fine Tune",
-        juce::NormalisableRange<float> (-50.0f, 50.0f, 0.1f), 4.0f,
+        juce::NormalisableRange<float> (-50.0f, 50.0f, 0.1f), 0.0f,
         juce::AudioParameterFloatAttributes{}.withStringFromValueFunction (
             [] (float v, int)
             {
@@ -69,9 +73,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout KeyGloProcessor::createLayou
         juce::AudioParameterFloatAttributes{}.withStringFromValueFunction (
             [] (float v, int) { return juce::String (v, 1) + " dB"; })));
 
+    // Default "Original", not parameters.json's "-2": once a beat is
+    // analysed the preview arms, and a shipped default of -2 semitones at
+    // 40 % mix would transpose every user's program unasked. The engine's
+    // recommendation is a suggestion the user clicks, never a default.
     layout.add (std::make_unique<juce::AudioParameterChoice> (
         juce::ParameterID { pid::transposeSemitones, 1 }, "Transpose Preview",
-        juce::StringArray { "-4", "-3", "-2", "-1", "Original", "+1", "+2", "+3", "+4" }, 2));
+        juce::StringArray { "-4", "-3", "-2", "-1", "Original", "+1", "+2", "+3", "+4" }, 4));
 
     layout.add (std::make_unique<juce::AudioParameterBool> (
         juce::ParameterID { pid::previewRecommended, 1 }, "A/B Recommended", true));
@@ -225,6 +233,7 @@ void KeyGloProcessor::getStateInformation (juce::MemoryBlock& destData)
     state.setProperty ("windowScale", savedUIScale.load(), nullptr);
     state.setProperty ("reduceMotion", reduceMotion.load(), nullptr);
     state.setProperty ("lowPower", lowPower.load(), nullptr);
+    state.setProperty ("presetName", presets->currentName(), nullptr);
 
     juce::MemoryOutputStream stream (destData, false);
     state.writeToStream (stream);
@@ -240,6 +249,11 @@ void KeyGloProcessor::setStateInformation (const void* data, int sizeInBytes)
     reduceMotion.store ((bool) state.getProperty ("reduceMotion", false));
     lowPower.store ((bool) state.getProperty ("lowPower", false));
     apvts.replaceState (state);
+
+    // Name-based preset restore AFTER the parameters land, so a modified
+    // preset stays modified; the restore itself is not an undoable step.
+    presets->restoreByName (state.getProperty ("presetName", "").toString());
+    undoManager.clearUndoHistory();
 }
 
 juce::AudioProcessorEditor* KeyGloProcessor::createEditor()
