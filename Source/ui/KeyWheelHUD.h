@@ -164,14 +164,16 @@ public:
             e += (target - e) * juce::jmin (1.0f, (float) (dt * 1000.0 / ms));
         }
 
-        // Key confidence is real from milestone 2; artist-side pods stay
-        // honest "--" until milestone 3 delivers their engines.
+        // Key confidence is real from milestone 2; the artist-side pods come
+        // alive once milestone 3's vocal engine has a profile and something
+        // sung to score. Hook match additionally needs a detected key.
+        const bool haveFit = demoMode || snap->hasFitResult;
         confidencePod.setEmpty (! goodKey);
         confidencePod.setTarget (goodKey ? snap->keyConfidence : 0.0f);
-        rangePod.setEmpty (! demoMode);
-        hookPod.setEmpty (! demoMode);
-        rangePod.setTarget (demoMode ? snap->rangeFit : 0.0f);
-        hookPod.setTarget (demoMode ? snap->hookMatch : 0.0f);
+        rangePod.setEmpty (! haveFit);
+        hookPod.setEmpty (! haveFit || ! goodKey);
+        rangePod.setTarget (haveFit ? snap->rangeFit : 0.0f);
+        hookPod.setTarget (haveFit && goodKey ? snap->hookMatch : 0.0f);
         confidencePod.update (dt);
         rangePod.update (dt);
         hookPod.update (dt);
@@ -318,8 +320,9 @@ public:
         g.setColour (tokens::stroke.brighter (0.15f));
         g.fillRect (centreBox.getCentreX() - 70, centreBox.getY() + 2, 140, 1);
 
-        // Artist Fit and the recommendation stay "--" until milestone 3.
-        const bool haveFit = demoMode;
+        // Artist Fit and the recommendation are real once a profile exists
+        // and there is sung material to score against it.
+        const bool haveFit = demoMode || snap->hasFitResult;
 
         g.setColour (tokens::muted);
         g.setFont (Fonts::make (12.5f, false, true).withExtraKerningFactor (0.09f));

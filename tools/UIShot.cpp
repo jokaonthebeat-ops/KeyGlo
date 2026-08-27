@@ -53,6 +53,18 @@ int main (int argc, char** argv)
     processor.setPlayConfigDetails (2, 2, 48000.0, 512);
     processor.prepareToPlay (48000.0, 512);
 
+    // "vocal" mode: give the engine a profile and sing a phrase, so the
+    // shot shows the artist side alive (trail, note readout, fit pods).
+    if (modeArg.contains ("vocal"))
+    {
+        ArtistProfile profile;
+        profile.extendedLowMidi = 48; profile.comfortableLowMidi = 52;
+        profile.strongLowMidi = 55;   profile.strongHighMidi = 64;
+        profile.comfortableHighMidi = 67; profile.extendedHighMidi = 71;
+        profile.falsettoHighMidi = 71;
+        processor.getVocalEngine().setProfile (profile);
+    }
+
     if (modeArg.contains ("demo"))
     {
         // The approved-reference state: contract dataset presented as a
@@ -132,6 +144,64 @@ int main (int argc, char** argv)
             processor.processBlock (audio, midi);
         }
     };
+
+    // A sung phrase in F# minor over the beat: harmonic-rich, vibrato,
+    // so the pitch tracker has real material.
+    auto feedVoice = [&]
+    {
+        juce::AudioBuffer<float> audio (2, 512);
+        juce::MidiBuffer midi;
+        const int melody[] = { 61, 63, 64, 66, 64, 63, 61, 59, 61, 64 };
+        double phase[6] = { 0, 0, 0, 0, 0, 0 };
+        const double amps[6] = { 1.0, 0.55, 0.32, 0.18, 0.10, 0.06 };
+
+        int written = 0, blocksSinceSleep = 0;
+        for (int n = 0; n < 10; ++n)
+        {
+            const double f0 = 440.0 * std::pow (2.0, (melody[n] - 69) / 12.0);
+            const int noteSamples = (int) (48000.0 * 0.75);
+            for (int i = 0; i < noteSamples; ++i)
+            {
+                const double t = i / 48000.0;
+                const double vib = std::pow (2.0, (22.0 * std::sin (juce::MathConstants<double>::twoPi
+                                                                      * 5.2 * t)) / 1200.0);
+                const float env = (float) (juce::jmin (1.0, t / 0.05)
+                                            * juce::jmin (1.0, (0.75 - t) / 0.05));
+                float v = 0.0f;
+                for (int h = 0; h < 6; ++h)
+                {
+                    phase[h] += juce::MathConstants<double>::twoPi * f0 * vib * (h + 1) / 48000.0;
+                    v += (float) (amps[h] * std::sin (phase[h]));
+                }
+                audio.setSample (0, written, 0.22f * env * v);
+                audio.setSample (1, written, 0.22f * env * v * 0.97f);
+                if (++written == 512)
+                {
+                    processor.processBlock (audio, midi);
+                    written = 0;
+                    // Real-time pacing: the vocal worker caps how much
+                    // backlog it pitch-tracks per pass, so dumping the whole
+                    // phrase at once would leave most of it untracked.
+                    if (++blocksSinceSleep >= 1)
+                    {
+                        juce::Thread::sleep (11);   // ~= 512 samples at 48 kHz
+                        blocksSinceSleep = 0;
+                    }
+                }
+            }
+        }
+    };
+
+    if (modeArg.contains ("vocal"))
+    {
+        feedVoice();
+        for (int tries = 0; tries < 200; ++tries)
+        {
+            juce::Thread::sleep (25);
+            if (processor.getDisplayModel().get()->hasFitResult)
+                break;
+        }
+    }
 
     if (modeArg.contains ("signal"))
     {

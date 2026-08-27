@@ -14,6 +14,10 @@
 #include "analysis/BeatKeyDetector.h"
 #include "analysis/TempoDetector.h"
 #include "analysis/CaptureRing.h"
+#include "analysis/PitchTracker.h"
+#include "analysis/VocalRangeProfiler.h"
+#include "analysis/HookFitScorer.h"
+#include "state/ArtistProfileStore.h"
 #include <cstdio>
 
 using namespace keyglo;
@@ -631,6 +635,454 @@ int main()
         check (snap->sourceName == file.getFileName(), "file result carries the file name");
         check (snap->bpm < 1.0f || snap->bpmSource != "HOST",
                "file BPM never claims host tempo");
+        file.deleteFile();
+    }
+
+    // =======================================================================
+    //  Milestone 3 - vocal range, profiles and hook fit
+    // =======================================================================
+
+    // A sung note: harmonic-rich (voice-like), vibrato, soft attack/release.
+    auto renderVoice = [] (float midi, double seconds, double sr,
+                           float vibratoCents = 25.0f) -> std::vector<float>
+    {
+        const int n = (int) (sr * seconds);
+        std::vector<float> out ((size_t) n, 0.0f);
+        const double f0 = 440.0 * std::pow (2.0, (midi - 69.0) / 12.0);
+        double phase[6] = { 0, 0, 0, 0, 0, 0 };
+        const double amps[6] = { 1.0, 0.55, 0.32, 0.18, 0.10, 0.06 };
+
+        for (int i = 0; i < n; ++i)
+        {
+            const double t = i / sr;
+            const double vib = std::pow (2.0, (vibratoCents * std::sin (juce::MathConstants<double>::twoPi
+                                                                          * 5.2 * t)) / 1200.0);
+            const float env = (float) (juce::jmin (1.0, t / 0.05)
+                                        * juce::jmin (1.0, (seconds - t) / 0.05));
+            float v = 0.0f;
+            for (int h = 0; h < 6; ++h)
+            {
+                phase[h] += juce::MathConstants<double>::twoPi * f0 * vib * (h + 1) / sr;
+                v += (float) (amps[h] * std::sin (phase[h]));
+            }
+            out[(size_t) i] = 0.22f * env * v;
+        }
+        return out;
+    };
+
+    // Feed audio to a processor at roughly real time. The vocal worker caps
+    // how much backlog it will pitch-track per pass (deliberately - a stalled
+    // worker must not stampede), so a test that dumps ten seconds instantly
+    // would have most of it skipped. Real hosts deliver in real time; so does
+    // this.
+    auto feedPaced = [] (KeyGloProcessor& proc, const std::vector<float>& audio,
+                         double sr, int blockSize = 512)
+    {
+        juce::AudioBuffer<float> block (2, blockSize);
+        juce::MidiBuffer midi;
+        const double blockMs = 1000.0 * blockSize / sr;
+        double budget = 0.0;
+
+        for (int start = 0; start + blockSize <= (int) audio.size(); start += blockSize)
+        {
+            for (int i = 0; i < blockSize; ++i)
+            {
+                block.setSample (0, i, audio[(size_t) (start + i)]);
+                block.setSample (1, i, audio[(size_t) (start + i)]);
+            }
+            proc.processBlock (block, midi);
+
+            // Sleep in ~10 ms grains rather than per block, so the pacing
+            // costs wall-clock time without thousands of tiny sleeps.
+            budget += blockMs;
+            if (budget >= 10.0)
+            {
+                juce::Thread::sleep ((int) budget);
+                budget = 0.0;
+            }
+        }
+    };
+
+    // --- pitch tracker ------------------------------------------------------
+    {
+        for (const float midi : { 45.0f, 55.0f, 60.0f, 67.0f, 72.0f })
+        {
+            const auto voice = renderVoice (midi, 1.0, 48000.0, 0.0f);
+            const auto frames = PitchTracker::analyseBuffer (voice.data(), (int) voice.size(),
+                                                             48000.0);
+            std::vector<float> voiced;
+            for (const auto& f : frames)
+                if (f.voiced)
+                    voiced.push_back (f.midi);
+
+            check (voiced.size() > frames.size() / 2,
+                   "MIDI " + juce::String (midi, 0) + ": mostly voiced ("
+                     + juce::String ((int) voiced.size()) + "/" + juce::String ((int) frames.size()) + ")");
+            if (! voiced.empty())
+            {
+                const float median = VocalRangeProfiler::percentile (voiced, 0.5f);
+                checkNear (median, midi, 0.35, "MIDI " + juce::String (midi, 0) + " tracked");
+            }
+        }
+    }
+
+    {
+        // Breath/noise must NOT become notes - a gap, never a false zero.
+        juce::Random rng (0x9911);
+        std::vector<float> breath ((size_t) (48000 * 1.5), 0.0f);
+        float lp = 0.0f;
+        for (auto& v : breath)
+        {
+            lp += 0.05f * ((rng.nextFloat() * 2.0f - 1.0f) - lp);
+            v = 0.05f * lp;
+        }
+        const auto frames = PitchTracker::analyseBuffer (breath.data(), (int) breath.size(), 48000.0);
+        int voicedCount = 0;
+        for (const auto& f : frames)
+            if (f.voiced)
+                ++voicedCount;
+        check (voicedCount < (int) frames.size() / 5,
+               "filtered noise is mostly unvoiced (" + juce::String (voicedCount) + "/"
+                 + juce::String ((int) frames.size()) + ")");
+
+        std::vector<float> silence ((size_t) (48000 * 1.0), 0.0f);
+        const auto quiet = PitchTracker::analyseBuffer (silence.data(), (int) silence.size(), 48000.0);
+        int quietVoiced = 0;
+        for (const auto& f : quiet)
+            if (f.voiced)
+                ++quietVoiced;
+        check (quietVoiced == 0, "digital silence produces no voiced frames");
+    }
+
+    // --- range profiler -----------------------------------------------------
+    {
+        // A baritone: comfortable G2..C4, strong C3..G3, extremes E2/E4.
+        auto spread = [] (float centre, float halfWidth, int count)
+        {
+            std::vector<float> v;
+            for (int i = 0; i < count; ++i)
+                v.push_back (centre + halfWidth * (2.0f * (float) i / (float) (count - 1) - 1.0f));
+            return v;
+        };
+
+        const auto low  = spread (44.0f, 3.0f, 100);   // around G#2
+        const auto mid  = spread (55.0f, 5.0f, 100);   // around G3
+        const auto high = spread (64.0f, 3.0f, 100);   // around E4
+        const auto profile = VocalRangeProfiler::build (low, mid, high, {});
+
+        check (profile.extendedLowMidi <= profile.comfortableLowMidi,
+               "profile: extended low <= comfortable low");
+        check (profile.comfortableLowMidi <= profile.strongLowMidi,
+               "profile: comfortable low <= strong low");
+        check (profile.strongLowMidi < profile.strongHighMidi,
+               "profile: strong zone is non-empty");
+        check (profile.strongHighMidi <= profile.comfortableHighMidi,
+               "profile: strong high <= comfortable high");
+        check (profile.comfortableHighMidi <= profile.extendedHighMidi,
+               "profile: comfortable high <= extended high");
+        check (! profile.hasFalsetto, "profile: no falsetto when the phase is skipped");
+        checkNear (profile.strongCentre(), 55.0, 2.5, "profile: strong centre near the mid phase");
+
+        // One wild outlier must not define the range (percentiles, not extremes).
+        auto withOutlier = high;
+        withOutlier.push_back (96.0f);   // an accidental squeak
+        const auto robust = VocalRangeProfiler::build (low, mid, withOutlier, {});
+        check (robust.extendedHighMidi < 75,
+               "profile: a single outlier does not stretch the range (got "
+                 + juce::String (robust.extendedHighMidi) + ")");
+
+        const auto falsetto = spread (76.0f, 2.0f, 60);
+        const auto withFalsetto = VocalRangeProfiler::build (low, mid, high, falsetto);
+        check (withFalsetto.hasFalsetto && withFalsetto.falsettoHighMidi > withFalsetto.extendedHighMidi,
+               "profile: falsetto phase extends the top");
+    }
+
+    // --- hook fit -----------------------------------------------------------
+    {
+        ArtistProfile p;
+        p.extendedLowMidi = 48; p.comfortableLowMidi = 52;
+        p.strongLowMidi = 55;   p.strongHighMidi = 64;
+        p.comfortableHighMidi = 67; p.extendedHighMidi = 71;
+        p.falsettoHighMidi = 71;
+
+        auto hookAt = [] (std::initializer_list<int> midiNotes, float secondsEach)
+        {
+            HookStats s;
+            std::vector<float> all;
+            for (int m : midiNotes)
+            {
+                s.noteSeconds[(size_t) m] += secondsEach;
+                s.totalVoicedSeconds += secondsEach;
+                all.push_back ((float) m);
+            }
+            s.medianMidi = VocalRangeProfiler::percentile (all, 0.5f);
+            return s;
+        };
+
+        std::array<bool, 12> anyScale;
+        anyScale.fill (true);
+
+        // A hook sitting squarely in the strong zone needs no transposition.
+        {
+            const auto hook = hookAt ({ 55, 57, 59, 60, 62, 64 }, 0.5f);
+            const auto fit = HookFitScorer::score (hook, p, anyScale, true);
+            check (fit.valid, "hook fit: in-zone hook scores");
+            check (fit.recommendedTranspose == 0,
+                   "hook fit: in-zone hook recommends no shift (got "
+                     + juce::String (fit.recommendedTranspose) + ")");
+            check (fit.artistFit > 0.7f, "hook fit: in-zone hook scores high ("
+                     + juce::String (fit.artistFit, 2) + ")");
+        }
+
+        // A hook four semitones too high should be pulled DOWN.
+        {
+            const auto hook = hookAt ({ 67, 69, 71, 72, 74 }, 0.5f);
+            const auto fit = HookFitScorer::score (hook, p, anyScale, true);
+            check (fit.recommendedTranspose < 0,
+                   "hook fit: a too-high hook is transposed down (got "
+                     + juce::String (fit.recommendedTranspose) + ")");
+            check (fit.estimatedFit > fit.artistFit,
+                   "hook fit: the recommendation beats the original ("
+                     + juce::String (fit.estimatedFit, 2) + " vs "
+                     + juce::String (fit.artistFit, 2) + ")");
+        }
+
+        // ...and a too-low hook pushed UP.
+        {
+            const auto hook = hookAt ({ 47, 48, 50, 52 }, 0.5f);
+            const auto fit = HookFitScorer::score (hook, p, anyScale, true);
+            check (fit.recommendedTranspose > 0,
+                   "hook fit: a too-low hook is transposed up (got "
+                     + juce::String (fit.recommendedTranspose) + ")");
+        }
+
+        // Scale compatibility: a hook of scale tones beats one full of
+        // out-of-scale tones against the same beat.
+        {
+            std::array<bool, 12> cMajor { true, false, true, false, true, true,
+                                          false, true, false, true, false, true };
+            const auto inScale  = hookAt ({ 60, 62, 64, 65, 67 }, 0.5f);
+            const auto outScale = hookAt ({ 61, 63, 66, 68, 70 }, 0.5f);
+            const auto a = HookFitScorer::score (inScale, p, cMajor, true);
+            const auto b = HookFitScorer::score (outScale, p, cMajor, true);
+            check (a.hookMatch > 0.9f, "hook fit: in-scale hook matches the beat ("
+                     + juce::String (a.hookMatch, 2) + ")");
+            check (b.hookMatch < 0.1f, "hook fit: out-of-scale hook does not ("
+                     + juce::String (b.hookMatch, 2) + ")");
+        }
+
+        // Too little voiced material must not produce a confident score.
+        {
+            const auto tiny = hookAt ({ 60 }, 0.3f);
+            const auto fit = HookFitScorer::score (tiny, p, anyScale, true);
+            check (! fit.valid, "hook fit: refuses to score a fragment");
+        }
+
+        // Ties prefer the smaller shift.
+        {
+            const auto hook = hookAt ({ 59, 60 }, 1.0f);
+            const auto fit = HookFitScorer::score (hook, p, anyScale, true);
+            check (std::abs (fit.recommendedTranspose) <= 2,
+                   "hook fit: prefers a small shift when scores are close (got "
+                     + juce::String (fit.recommendedTranspose) + ")");
+        }
+    }
+
+    // --- profile persistence -------------------------------------------------
+    {
+        auto sandbox = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                         .getChildFile ("KeyGloTestProfiles");
+        sandbox.deleteRecursively();
+        ArtistProfileStore::dirOverride() = sandbox;
+
+        ArtistProfile p;
+        p.extendedLowMidi = 41; p.comfortableLowMidi = 45;
+        p.strongLowMidi = 50;   p.strongHighMidi = 61;
+        p.comfortableHighMidi = 65; p.extendedHighMidi = 70;
+        p.falsettoHighMidi = 79; p.hasFalsetto = true;
+
+        check (ArtistProfileStore::save ("Test Artist", p), "profile saves");
+
+        ArtistProfile loaded;
+        check (ArtistProfileStore::load ("Test Artist", loaded), "profile loads");
+        check (loaded.extendedLowMidi == 41 && loaded.comfortableLowMidi == 45
+                 && loaded.strongLowMidi == 50 && loaded.strongHighMidi == 61
+                 && loaded.comfortableHighMidi == 65 && loaded.extendedHighMidi == 70
+                 && loaded.falsettoHighMidi == 79 && loaded.hasFalsetto,
+               "profile round-trips every field");
+
+        check (ArtistProfileStore::listProfiles().contains ("Test Artist"),
+               "saved profile is listed");
+        check (! ArtistProfileStore::load ("Nobody", loaded), "missing profile fails cleanly");
+
+        // A name with path characters must not escape the profiles folder.
+        check (ArtistProfileStore::save ("../../evil", p), "awkward name still saves");
+        check (ArtistProfileStore::fileFor ("../../evil").getParentDirectory() == sandbox,
+               "profile names cannot escape the profiles directory");
+
+        sandbox.deleteRecursively();
+        ArtistProfileStore::dirOverride() = juce::File();
+    }
+
+    // --- end-to-end: sung audio through the processor ------------------------
+    {
+        KeyGloProcessor p;
+        p.setPlayConfigDetails (2, 2, 48000.0, 512);
+        p.prepareToPlay (48000.0, 512);
+
+        // Give the engine a profile directly (the guided test is UI-driven).
+        ArtistProfile profile;
+        profile.extendedLowMidi = 48; profile.comfortableLowMidi = 52;
+        profile.strongLowMidi = 55;   profile.strongHighMidi = 64;
+        profile.comfortableHighMidi = 67; profile.extendedHighMidi = 71;
+        profile.falsettoHighMidi = 71;
+        p.getVocalEngine().setProfile (profile);
+
+        // Sing a short phrase in the strong zone.
+        std::vector<float> phrase;
+        for (int midi : { 60, 62, 64, 62, 60, 59 })
+        {
+            const auto note = renderVoice ((float) midi, 0.7, 48000.0);
+            phrase.insert (phrase.end(), note.begin(), note.end());
+        }
+
+        feedPaced (p, phrase, 48000.0);
+
+        bool tracked = false;
+        for (int tries = 0; tries < 200 && ! tracked; ++tries)
+        {
+            juce::Thread::sleep (25);
+            auto live = p.getDisplayModel().getLive();
+            int voicedPoints = 0;
+            for (float v : live->pitchTrail)
+                if (v > 0.0f)
+                    ++voicedPoints;
+            tracked = voicedPoints > 60;
+        }
+        check (tracked, "sung phrase fills the live pitch trail");
+
+        bool scored = false;
+        for (int tries = 0; tries < 200 && ! scored; ++tries)
+        {
+            juce::Thread::sleep (25);
+            scored = p.getDisplayModel().get()->hasFitResult;
+        }
+        auto snap = p.getDisplayModel().get();
+        check (scored, "sung phrase produces a fit result");
+        check (snap->rangeFit > 0.5f, "in-zone phrase scores well ("
+                 + juce::String (snap->rangeFit, 2) + ")");
+        check (std::abs (snap->recommendedTranspose) <= 1,
+               "in-zone phrase needs little or no transposition (got "
+                 + juce::String (snap->recommendedTranspose) + ")");
+    }
+
+    // --- hook match must not stay stale at 0 once a key appears -------------
+    {
+        // Scoring happens continuously; a fit computed BEFORE any key exists
+        // stores hookMatch = 0. When the key arrives the pod must be re-scored,
+        // or it reads "0" (a terrible match) instead of the truth.
+        KeyGloProcessor p;
+        p.setPlayConfigDetails (2, 2, 48000.0, 512);
+        p.prepareToPlay (48000.0, 512);
+
+        ArtistProfile profile;
+        profile.extendedLowMidi = 48; profile.comfortableLowMidi = 52;
+        profile.strongLowMidi = 55;   profile.strongHighMidi = 64;
+        profile.comfortableHighMidi = 67; profile.extendedHighMidi = 71;
+        profile.falsettoHighMidi = 71;
+        p.getVocalEngine().setProfile (profile);
+
+        // Sing C-major-only material, then let the beat analysis run on it.
+        std::vector<float> phrase;
+        for (int m : { 60, 62, 64, 65, 67, 65, 64, 62 })
+        {
+            const auto note = renderVoice ((float) m, 0.9, 48000.0);
+            phrase.insert (phrase.end(), note.begin(), note.end());
+        }
+
+        feedPaced (p, phrase, 48000.0);
+
+        p.analyseCaptureNow();
+        for (int tries = 0; tries < 300; ++tries)
+        {
+            juce::Thread::sleep (50);
+            auto s = p.getDisplayModel().get();
+            if (s->hasBeatResult && ! s->analyzing && s->hasFitResult)
+                break;
+        }
+
+        auto snap = p.getDisplayModel().get();
+        check (snap->hasFitResult, "sung material produces a fit");
+        check (snap->hasProfile,
+               "snapshot reports the profile the engine holds (SAVE PROFILE enabled)");
+        if (snap->hasBeatResult && ! snap->noReliableKey)
+            check (snap->hookMatch > 0.5f,
+                   "hook match is re-scored once a key exists, not left at 0 (got "
+                     + juce::String (snap->hookMatch, 2) + " against "
+                     + snap->key + " " + snap->scale + ")");
+    }
+
+    // --- a vocal take must not overwrite a file-analysed beat ---------------
+    {
+        // Write a beat file, analyse it, then sing over it: the key must
+        // still describe the BEAT, not the singer.
+        const auto beat = renderLoop (aMajor, 55.0f, 9.0, 44100.0, 0.0);
+        auto file = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                       .getChildFile ("keyglo-test-beat.wav");
+        file.deleteFile();
+        {
+            juce::WavAudioFormat wav;
+            auto stream = file.createOutputStream();
+            std::unique_ptr<juce::AudioFormatWriter> writer (
+                wav.createWriterFor (stream.get(), 44100.0, 1, 16, {}, 0));
+            if (writer != nullptr)
+            {
+                stream.release();
+                juce::AudioBuffer<float> b (1, (int) beat.size());
+                for (int i = 0; i < (int) beat.size(); ++i)
+                    b.setSample (0, i, beat[(size_t) i]);
+                writer->writeFromAudioSampleBuffer (b, 0, b.getNumSamples());
+            }
+        }
+
+        KeyGloProcessor p;
+        p.setPlayConfigDetails (2, 2, 48000.0, 512);
+        p.prepareToPlay (48000.0, 512);
+        p.analyseFileAsync (file);
+        for (int tries = 0; tries < 300; ++tries)
+        {
+            juce::Thread::sleep (50);
+            auto s = p.getDisplayModel().get();
+            if (s->hasBeatResult && ! s->analyzing)
+                break;
+        }
+        check (p.getDisplayModel().get()->key == "A", "beat file analysed as A major");
+
+        // Now push 10 s of singing through - long enough that the old
+        // auto-re-analysis would have fired twice.
+        std::vector<float> singing;
+        for (int m : { 64, 66, 68, 69, 71, 69, 68, 66 })
+        {
+            const auto note = renderVoice ((float) m, 1.3, 48000.0);
+            singing.insert (singing.end(), note.begin(), note.end());
+        }
+        juce::AudioBuffer<float> block (2, 512);
+        juce::MidiBuffer midi;
+        for (int start = 0; start + 512 <= (int) singing.size(); start += 512)
+        {
+            for (int i = 0; i < 512; ++i)
+            {
+                block.setSample (0, i, singing[(size_t) (start + i)]);
+                block.setSample (1, i, singing[(size_t) (start + i)]);
+            }
+            p.processBlock (block, midi);
+        }
+        juce::Thread::sleep (4000);   // past two auto-analysis windows
+
+        auto after = p.getDisplayModel().get();
+        check (after->key == "A" && after->sourceName == file.getFileName(),
+               "singing over an analysed beat does not replace its key (still "
+                 + after->key + " from " + after->sourceName + ")");
         file.deleteFile();
     }
 

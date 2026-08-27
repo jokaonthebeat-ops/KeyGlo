@@ -75,6 +75,16 @@ public:
     void analyseCaptureNow()                               { coordinator->analyseRingNow(); }
     bool isAnalysisBusy() const                            { return coordinator->isBusy(); }
 
+    // Vocal engine (milestone 3).
+    void startRangeTest()                                  { coordinator->startRangeTest(); }
+    void advanceRangeTest()                                { coordinator->advanceRangeTest(); }
+    void cancelRangeTest()                                 { coordinator->cancelRangeTest(); }
+    bool saveArtistProfile (const juce::String& name)      { return coordinator->saveProfile (name); }
+    bool loadArtistProfile (const juce::String& name)      { return coordinator->loadProfile (name); }
+    const ArtistProfile& getArtistProfile() const          { return coordinator->vocals().getProfile(); }
+    bool hasArtistProfile() const                          { return coordinator->vocals().hasProfile(); }
+    VocalEngine& getVocalEngine()                          { return coordinator->vocals(); }
+
     float getPeakDb (int channel) const
     {
         return peakDb[juce::jlimit (0, 1, channel)].load (std::memory_order_relaxed);

@@ -17,6 +17,8 @@
 #include "CaptureRing.h"
 #include "BeatKeyDetector.h"
 #include "TempoDetector.h"
+#include "VocalEngine.h"
+#include "../state/ArtistProfileStore.h"
 
 namespace keyglo
 {
@@ -54,6 +56,37 @@ public:
 
     bool isBusy() const                 { return busy.load(); }
 
+    // --- vocal side (milestone 3) -----------------------------------------
+    VocalEngine& vocals()               { return vocal; }
+
+    void startRangeTest()               { vocal.startRangeTest(); publishVocalState(); }
+    void advanceRangeTest()             { vocal.advanceRangeTest(); publishVocalState(); }
+    void cancelRangeTest()              { vocal.cancelRangeTest(); publishVocalState(); }
+
+    bool saveProfile (const juce::String& name)
+    {
+        if (! vocal.hasProfile())
+            return false;
+        const bool ok = ArtistProfileStore::save (name, vocal.getProfile());
+        if (ok)
+        {
+            profileName = name;
+            publishVocalState();
+        }
+        return ok;
+    }
+
+    bool loadProfile (const juce::String& name)
+    {
+        ArtistProfile p;
+        if (! ArtistProfileStore::load (name, p))
+            return false;
+        vocal.setProfile (p);
+        profileName = name;
+        publishVocalState();
+        return true;
+    }
+
     // Host transport info, stored from processBlock via atomics.
     void setHostTempo (double bpm, bool playing)
     {
@@ -69,6 +102,9 @@ private:
 
         while (! threadShouldExit())
         {
+            // --- vocal lane: pitch-track whatever is new in the ring -------
+            trackNewAudio();
+
             // --- fast lane: live spectrum + chroma at ~20 Hz ---------------
             publishLiveVisuals();
 
@@ -90,10 +126,16 @@ private:
             else
             {
                 // --- periodic live re-analysis -----------------------------
+                // Never automatic once a FILE result stands: the artist sings
+                // over that beat, and re-analysing the vocal take would
+                // silently replace the beat's key with the singer's. The
+                // refresh button still forces a live pass.
+                const bool fileResultStands = model.get()->sourceName.isNotEmpty()
+                                                && model.get()->sourceName != "LIVE INPUT";
                 const auto written = ring.samplesWritten();
                 const auto now = juce::Time::currentTimeMillis();
                 const bool freshAudio = written > lastSeen + (juce::int64) (ring.sampleRate() * 2.0);
-                if (freshAudio && now - lastAutoAnalyse > 3000
+                if (! fileResultStands && freshAudio && now - lastAutoAnalyse > 3000
                      && written > (juce::int64) (ring.sampleRate() * 6.0))
                 {
                     lastAutoAnalyse = now;
@@ -104,6 +146,103 @@ private:
 
             wait (50);
         }
+    }
+
+    // Pitch-track exactly the audio that arrived since the last pass, so the
+    // trail advances in real time without re-analysing history.
+    void trackNewAudio()
+    {
+        const auto written = ring.samplesWritten();
+        if (vocalCursor == 0)
+            vocalCursor = written;                     // start from "now"
+
+        auto pending = written - vocalCursor;
+        if (pending <= 0)
+            return;
+
+        // Cap catch-up so a long stall cannot stampede the worker.
+        const auto maxChunk = (juce::int64) (ring.sampleRate() * 1.0);
+        if (pending > maxChunk)
+        {
+            vocalCursor = written - maxChunk;
+            pending = maxChunk;
+        }
+
+        // Needs at least one decimated frame's worth of samples.
+        const int factor = PitchTracker::decimationFactor (ring.sampleRate());
+        const int minSamples = PitchTracker::frameSize * factor;
+        if (pending < minSamples)
+            return;
+
+        float channelRms = 0.0f;
+        const int got = ring.readLatestMono (vocalBuffer, (int) pending + minSamples, channelRms);
+        if (got < minSamples)
+            return;
+
+        const auto latest = vocal.processChunk (vocalBuffer.data(), got, ring.sampleRate());
+        vocalCursor = written;
+
+        latestVoiced.store (latest.voiced);
+        if (latest.voiced)
+        {
+            latestMidi.store (latest.midi);
+            latestCents.store (latest.cents);
+        }
+
+        // Recompute fit periodically while a profile exists and someone sings.
+        const auto now = juce::Time::currentTimeMillis();
+        if (vocal.hasProfile() && now - lastFitMs > 400)
+        {
+            lastFitMs = now;
+            publishFit();
+        }
+    }
+
+    void publishFit()
+    {
+        auto current = model.get();
+        const bool haveScale = current->hasBeatResult && ! current->noReliableKey;
+        const auto fit = vocal.isHookArmed()
+                           ? vocal.scoreHook (current->scaleNotes, haveScale)
+                           : vocal.scoreRecent (current->scaleNotes, haveScale);
+        if (! fit.valid)
+            return;
+
+        auto next = std::make_shared<AnalysisSnapshot> (*current);
+        next->hasFitResult = true;
+        // The engine may hold a profile that never went through the range
+        // test or the store (loaded directly); the snapshot must still say so
+        // or SAVE PROFILE stays greyed out with a profile in hand.
+        next->hasProfile = vocal.hasProfile();
+        next->profileName = profileName;
+        next->artistFit = fit.artistFit;
+        next->rangeFit = fit.rangeFit;
+        next->hookMatch = fit.hookMatch;
+        next->recommendedTranspose = fit.recommendedTranspose;
+        next->estimatedFit = fit.estimatedFit;
+        next->fitByTranspose = fit.fitByTranspose;
+
+        if (haveScale)
+        {
+            static const char* names[12] = { "C", "C#", "D", "D#", "E", "F",
+                                             "F#", "G", "G#", "A", "A#", "B" };
+            const int newRoot = ((next->rootNote + fit.recommendedTranspose) % 12 + 12) % 12;
+            next->newKey = names[newRoot];
+            next->newScale = next->scale;
+        }
+        model.publish (std::move (next));
+    }
+
+    // Profile/range-test state into the snapshot (called from the message
+    // thread's control methods; publishing is lock-free).
+    void publishVocalState()
+    {
+        auto next = std::make_shared<AnalysisSnapshot> (*model.get());
+        next->hasProfile = vocal.hasProfile();
+        next->profileName = profileName;
+        next->rangeTestPhase = (int) vocal.phase();
+        next->rangeTestFrames = vocal.phaseFrameCount();
+        model.publish (std::move (next));
     }
 
     void publishLiveVisuals()
@@ -171,7 +310,23 @@ private:
             live->active = true;
         }
 
+        // Vocal readouts ride the same publication.
+        vocal.fillTrail (live->pitchTrail);
+        live->voiced = latestVoiced.load();
+        live->currentMidi = latestMidi.load();
+        live->currentCents = latestCents.load();
+
         model.publishLive (std::move (live));
+
+        // Range-test progress needs to reach the UI while a phase collects.
+        if (vocal.phase() != RangeTestPhase::idle && vocal.phase() != RangeTestPhase::done)
+        {
+            auto current = model.get();
+            const int frames = vocal.phaseFrameCount();
+            if (current->rangeTestFrames != frames
+                 || current->rangeTestPhase != (int) vocal.phase())
+                publishVocalState();
+        }
     }
 
     void analyseFile (const juce::File& file)
@@ -293,6 +448,15 @@ private:
         }
 
         model.publish (std::move (next));
+
+        // A fit scored before any key existed carries hookMatch = 0, which
+        // reads as "terrible match" rather than "not known yet". Now that a
+        // key stands, re-score so the pod tells the truth.
+        if (vocal.hasProfile())
+        {
+            lastFitMs = juce::Time::currentTimeMillis();
+            publishFit();
+        }
     }
 
     CaptureRing& ring;
@@ -307,7 +471,13 @@ private:
     std::atomic<float> hostBpm { 0.0f };
     std::atomic<bool> hostPlaying { false };
 
-    std::vector<float> liveBuffer, liveFft, ringBuffer;
+    std::vector<float> liveBuffer, liveFft, ringBuffer, vocalBuffer;
+
+    VocalEngine vocal;
+    juce::String profileName;
+    juce::int64 vocalCursor = 0, lastFitMs = 0;
+    std::atomic<bool> latestVoiced { false };
+    std::atomic<float> latestMidi { 0.0f }, latestCents { 0.0f };
 };
 
 } // namespace keyglo

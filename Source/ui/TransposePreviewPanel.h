@@ -152,10 +152,27 @@ public:
         g.setFont (Fonts::make (14.0f, false, true).withExtraKerningFactor (0.05f));
         g.drawText ("ESTIMATED FIT:", content.removeFromLeft (134),
                     juce::Justification::centredLeft);
-        g.setColour (demoMode ? tokens::cyan : tokens::muted2);
+        // Estimated fit is the score at the SELECTED transposition once the
+        // vocal engine has something to score; "--" before that.
+        const bool haveFit = demoMode || snap->hasFitResult;
+        const float selectedFit = snap->fitByTranspose[(size_t) juce::jlimit (0, 8, shownSelection)];
+        g.setColour (haveFit ? tokens::cyan : tokens::muted2);
         g.setFont (Fonts::make (27.0f, false, true));
-        g.drawText (demoMode ? juce::String (juce::roundToInt (snap->estimatedFit * 100.0f)) : "--",
+        g.drawText (haveFit ? juce::String (juce::roundToInt (selectedFit * 100.0f)) : "--",
                     content.translated (8, 0), juce::Justification::centredLeft);
+
+        // A recommendation badge marks the engine's pick when the user is
+        // auditioning a different shift.
+        if (haveFit && shownSelection != snap->recommendedTranspose + 4)
+        {
+            const int rec = snap->recommendedTranspose;
+            g.setColour (tokens::gold.withAlpha (0.85f));
+            g.setFont (Fonts::make (10.5f, false, true).withExtraKerningFactor (0.05f));
+            g.drawText ("BEST: " + juce::String (rec > 0 ? "+" : "") + juce::String (rec)
+                          + " ST (" + juce::String (juce::roundToInt (snap->estimatedFit * 100.0f)) + ")",
+                        card.withTrimmedTop (card.getHeight() - 20).withTrimmedRight (14),
+                        juce::Justification::centredRight);
+        }
 
         // --- captions under the A/B letters --------------------------------
         const auto a = local (layout::compareA);

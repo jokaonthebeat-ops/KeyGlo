@@ -31,6 +31,13 @@ struct AnalysisSnapshot
     juce::String sourceName;           // dropped file name, or "LIVE INPUT"
     juce::String bpmSource;            // "HOST" when the DAW supplies tempo
 
+    // Milestone 3 state
+    bool hasProfile = false;           // an artist profile is loaded/built
+    bool hasFitResult = false;         // hook scored against profile + beat
+    juce::String profileName;
+    int rangeTestPhase = 0;            // RangeTestPhase
+    int rangeTestFrames = 0;           // stable frames collected this phase
+
     // --- beat -------------------------------------------------------------
     juce::String key = "F#";
     juce::String scale = "Minor";
@@ -57,6 +64,11 @@ struct AnalysisSnapshot
     juce::String newKey = "E";
     juce::String newScale = "Minor";
     float estimatedFit = 0.94f;
+    // Fit at every candidate shift, index 0 = -4 ... 8 = +4, so the result
+    // card can follow the user's SELECTION rather than only showing the
+    // recommendation's score.
+    std::array<float, 9> fitByTranspose { 0.71f, 0.78f, 0.94f, 0.88f, 0.89f,
+                                          0.83f, 0.74f, 0.66f, 0.58f };
 
     // --- 808 / sample -----------------------------------------------------
     juce::String sampleNote = "G";
@@ -102,6 +114,12 @@ struct LiveVisuals
     std::array<float, 12> chroma {};     // 0..1
     float inputRms = 0.0f;
     bool active = false;                 // audio present recently
+
+    // Vocal side (milestone 3): 12 s of pitch history at 45 Hz, <= 0 = gap.
+    std::array<float, 540> pitchTrail {};
+    float currentMidi = 0.0f;
+    float currentCents = 0.0f;
+    bool voiced = false;
 };
 
 // Lock-free publish/read of immutable snapshots (09_JUCE_HANDOFF pattern).
