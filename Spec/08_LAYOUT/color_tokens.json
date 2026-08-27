@@ -1,0 +1,29 @@
+{
+  "background": "#03060A",
+  "background2": "#070B10",
+  "panel": "#0A1017",
+  "panel2": "#0D151D",
+  "panel3": "#101923",
+  "stroke": "#25313C",
+  "stroke_bright": "#344653",
+  "text": "#E7EBEF",
+  "muted": "#929EA8",
+  "muted2": "#596772",
+  "cyan": "#22DDFF",
+  "cyan2": "#00A9E8",
+  "violet": "#A75CFF",
+  "purple": "#7C42FF",
+  "magenta": "#D95BFF",
+  "gold": "#F4C14D",
+  "gold2": "#D9972D",
+  "green": "#4CE486",
+  "red": "#FF5C70",
+  "white": "#F5F7FA",
+  "usage": {
+    "cyan": "detected key, active notes, confidence, primary interaction",
+    "violet": "artist range, vocal pitch, profile interaction",
+    "gold": "recommendation, 808/sample tuning, fine tune",
+    "green": "engine ready and in-tune status",
+    "red": "out-of-range or invalid analysis warning"
+  }
+}

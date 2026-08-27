@@ -1,0 +1,1814 @@
+{
+  "package": "KeyGlo_UI_Assets_v1.0",
+  "version": "1.0.0",
+  "baseCanvas": [
+    1491,
+    1055
+  ],
+  "fileCount": 252,
+  "files": [
+    {
+      "path": "00_REFERENCE/KeyGlo_Annotated_Layout.png",
+      "bytes": 2057896,
+      "sha256": "e1934f927f5385092ae6f5512a600b638578b2e56e5d2fdd16b3cc3f3e45a706",
+      "width": 1491,
+      "height": 1055,
+      "mode": "RGBA"
+    },
+    {
+      "path": "00_REFERENCE/KeyGlo_Approved_UI_1491x1055.png",
+      "bytes": 1964160,
+      "sha256": "afa434dde7dd8f78d69be453d3fe474e27ae123cc2b8bafb9568f7b426f89c3e",
+      "width": 1491,
+      "height": 1055,
+      "mode": "RGB"
+    },
+    {
+      "path": "00_REFERENCE/KeyGlo_Wireframe_1491x1055.png",
+      "bytes": 76727,
+      "sha256": "53bff2fc4afb65d97be215407548f9c26b21012a1e8a3bacfd04c258685372a2",
+      "width": 1491,
+      "height": 1055,
+      "mode": "RGBA"
+    },
+    {
+      "path": "01_BRAND/LOGO_USAGE_GUIDE.md",
+      "bytes": 787,
+      "sha256": "404b4a6dc872b5a6aa5585e9741f840ff48756b672f013c17c27debf673c3bb3"
+    },
+    {
+      "path": "01_BRAND/keyglo_header_logo_250x58.png",
+      "bytes": 6376,
+      "sha256": "afe6dbed545bfacfaae2a43c65110ac1f51e0b2e9eb6ce7d3751a4d357c25f48",
+      "width": 250,
+      "height": 58,
+      "mode": "RGBA"
+    },
+    {
+      "path": "01_BRAND/keyglo_header_logo_500x116.png",
+      "bytes": 14105,
+      "sha256": "8b0576553594903fd8167d2a74a9180820d153e0f6b2778dbfe1001e2f4f7409",
+      "width": 500,
+      "height": 116,
+      "mode": "RGBA"
+    },
+    {
+      "path": "01_BRAND/keyglo_mark_1024.png",
+      "bytes": 79903,
+      "sha256": "4f1418271ad03789af97514bf562b0690341fb4745b1e1a8ed3f13fa0e9dc04a",
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGBA"
+    },
+    {
+      "path": "01_BRAND/keyglo_mark_256.png",
+      "bytes": 15829,
+      "sha256": "d6b278b46cc5c02734be4dcaeab85fe3594767338b48cc25208a9c0e69434443",
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA"
+    },
+    {
+      "path": "01_BRAND/keyglo_mark_512.png",
+      "bytes": 35475,
+      "sha256": "209bff82072592936968d19d61c2bfa22b50d073243ed8f4014c7d2292a0ed27",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA"
+    },
+    {
+      "path": "01_BRAND/keyglo_premium_logo_1024w.png",
+      "bytes": 30499,
+      "sha256": "a0ea658beeb3d2d3c4b53309951ae3d0c31463e4991afbb8cbbc9627aa2422ec",
+      "width": 1024,
+      "height": 239,
+      "mode": "RGBA"
+    },
+    {
+      "path": "01_BRAND/keyglo_premium_logo_2048w.png",
+      "bytes": 65940,
+      "sha256": "ddb99e0e52349b7a2e2fdd4f5ac238b42812bedc8515cd66c13f42d7a6e1644d",
+      "width": 2048,
+      "height": 478,
+      "mode": "RGBA"
+    },
+    {
+      "path": "01_BRAND/keyglo_premium_logo_master.svg",
+      "bytes": 3846,
+      "sha256": "e6e2358544412b82bf7a2efa2dac8114dc91b39cd9db0f721a466c211ba80e32"
+    },
+    {
+      "path": "01_BRAND/keyglo_premium_logo_master_2400x560.png",
+      "bytes": 79388,
+      "sha256": "39bd7dec33f9556d1de954451979e81f555a7c50deccce7942bc0078cd7213e5",
+      "width": 2400,
+      "height": 560,
+      "mode": "RGBA"
+    },
+    {
+      "path": "01_BRAND/keyglo_premium_mark.svg",
+      "bytes": 2292,
+      "sha256": "d4805a1d9ea42494ed05e26d45db2431e23a57eae3a824161379564373943cfb"
+    },
+    {
+      "path": "02_BASE/generic_panel_1024x640_2x.png",
+      "bytes": 14210,
+      "sha256": "18d13a4351b88e309c6212ac4b8128dacc0aea4079b5779f4ed3e52253769cae",
+      "width": 1024,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "02_BASE/generic_panel_512x320.png",
+      "bytes": 2163,
+      "sha256": "cd412fd09bd6ff6799e874dc2b7803b3ac4d51bc7de6fc7691a2791619d3813e",
+      "width": 512,
+      "height": 320,
+      "mode": "RGBA"
+    },
+    {
+      "path": "02_BASE/horizontal_divider_512x4.png",
+      "bytes": 108,
+      "sha256": "463785c2754fdeec8d8d4dd5ab3898e01566266db6a694e9261e339df2a9ab08",
+      "width": 512,
+      "height": 4,
+      "mode": "RGBA"
+    },
+    {
+      "path": "02_BASE/keyglo_shell_1491x1055.png",
+      "bytes": 1594382,
+      "sha256": "0cd6c9a1b1f091d1d06a80b6e30076fa5de30de585d0546556b4a56220d67807",
+      "width": 1491,
+      "height": 1055,
+      "mode": "RGBA"
+    },
+    {
+      "path": "02_BASE/keyglo_shell_2982x2110_2x.png",
+      "bytes": 5631203,
+      "sha256": "b9e435295aef27aea22b8b6fb9e9be36df14f7c5b70b0b2f7611f79d44ad5d02",
+      "width": 2982,
+      "height": 2110,
+      "mode": "RGBA"
+    },
+    {
+      "path": "02_BASE/subtle_noise_overlay_512.png",
+      "bytes": 594673,
+      "sha256": "3efd7543353f70dc4546d8c6e88a14de1d5853895bc7077215559c9f9d55a6af",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA"
+    },
+    {
+      "path": "03_HUD/HUD_RENDERING_NOTES.md",
+      "bytes": 550,
+      "sha256": "e53517019d4c33bd3e92cda4d59593f87f27f1b513ad0308c133235ac5dea31a"
+    },
+    {
+      "path": "03_HUD/key_wheel_base_1024.png",
+      "bytes": 244066,
+      "sha256": "adaa445e0639256d69393f95aa75b37ad040b9413c84a0b726e4ca6ae45d54c6",
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGBA"
+    },
+    {
+      "path": "03_HUD/key_wheel_center_glass_640.png",
+      "bytes": 17973,
+      "sha256": "71072bce8a126cc59602a6b7acecbb0fa6d7a9176522eb67bd2375eeefa2b80d",
+      "width": 640,
+      "height": 640,
+      "mode": "RGBA"
+    },
+    {
+      "path": "03_HUD/key_wheel_orbit_256px_64frames_vertical.png",
+      "bytes": 816557,
+      "sha256": "4e640320aa4a34cf93a6093cc452af86c43d84606090b5d010395e8cfad843a9",
+      "width": 256,
+      "height": 16384,
+      "mode": "RGBA"
+    },
+    {
+      "path": "03_HUD/key_wheel_preview_1024.png",
+      "bytes": 307148,
+      "sha256": "be5066a9f0037ceee6fca9fd865fc42bbf9a94e110c5b4904790d73f3e7c66fe",
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGBA"
+    },
+    {
+      "path": "03_HUD/note_node_active_cyan_128.png",
+      "bytes": 7489,
+      "sha256": "d293565b3c9fd9340d9e97ca0eec787d2b282c5246b468e054e70c964027f4ec",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "path": "03_HUD/note_node_active_violet_128.png",
+      "bytes": 8168,
+      "sha256": "b874bc33c384819edefd90de2f085852a909c9aa0a07b12a941529cd34b3e3b6",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "path": "03_HUD/note_node_inactive_128.png",
+      "bytes": 1006,
+      "sha256": "1ed1c924eb9d055bbea07b6f0f98d70c9f5dac052a81ea5accc0d364456f5c87",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "path": "03_HUD/note_positions.json",
+      "bytes": 769,
+      "sha256": "a30eda65285d58e453a26766ad835c549fedfa81d8d16a5d97fe49a990a75051"
+    },
+    {
+      "path": "03_HUD/score_pod_cyan_256.png",
+      "bytes": 24090,
+      "sha256": "7101f473aef0296e1ea41ac5b71353d89e098442ae77a722dcc649f7e3590699",
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA"
+    },
+    {
+      "path": "03_HUD/score_pod_gold_256.png",
+      "bytes": 24596,
+      "sha256": "0cbe17cc221a5e81aa5dec7bb7ddee1bc586de8ad3f0f27891a7098411ff7220",
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA"
+    },
+    {
+      "path": "03_HUD/score_pod_violet_256.png",
+      "bytes": 24028,
+      "sha256": "9b9bdb7c01c978d5bae5158d48728f95c286757848f9cd31950b7b796fe15a2b",
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/CONTROL_ASSET_NOTES.md",
+      "bytes": 483,
+      "sha256": "276f4217399615352db5dd380ccfe09ffac472d1b9a6fa205b8d8a9934eca189"
+    },
+    {
+      "path": "04_CONTROLS/buttons/apply_tune_219x31.svg",
+      "bytes": 417,
+      "sha256": "8b311c44209141daa93df24120831cb23b04c4643bc70c1f57a5ee4487442578"
+    },
+    {
+      "path": "04_CONTROLS/buttons/apply_tune_219x31_disabled.png",
+      "bytes": 466,
+      "sha256": "750ce4c481302b83a0e4b8a721bceec4f3ce1740e43555c39d660e14c4923426",
+      "width": 219,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/apply_tune_219x31_down.png",
+      "bytes": 1108,
+      "sha256": "42a213f55ed3af1dd5493ae8b6f53f5e5e5b48403043687983823df967c2499c",
+      "width": 219,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/apply_tune_219x31_hover.png",
+      "bytes": 1249,
+      "sha256": "ceb0ed3e50e2e7a7e9f30ef316b3d0f30ad5df45a410931fe781e53a896da32e",
+      "width": 219,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/apply_tune_219x31_normal.png",
+      "bytes": 516,
+      "sha256": "64cd5702a671a67d7d6329dac5de35e127e7c4377ea65e654f928bf20eb46e7c",
+      "width": 219,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/compare_72x91.svg",
+      "bytes": 413,
+      "sha256": "acccf2e5c76bd05de4e568bfa7f00efc73003ac28910c02d9b7d685ff7028210"
+    },
+    {
+      "path": "04_CONTROLS/buttons/compare_72x91_disabled.png",
+      "bytes": 580,
+      "sha256": "d7b402e49ab605fc1c48b9491d4a676c1462acb699a1b24a3804e0182a5cccbd",
+      "width": 72,
+      "height": 91,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/compare_72x91_down.png",
+      "bytes": 1272,
+      "sha256": "f3e8f7df3f3275bed8cb8bc773a2eea4b4e72d1fdd103d42ed18f9bb94bc4813",
+      "width": 72,
+      "height": 91,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/compare_72x91_hover.png",
+      "bytes": 1492,
+      "sha256": "c484ae74f0189b4cfb8d64388b8b3cf102ecc2444118699bcb456550975e2e3b",
+      "width": 72,
+      "height": 91,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/compare_72x91_normal.png",
+      "bytes": 618,
+      "sha256": "946a8e4a91a1721be4545c62844473fad24483cf25f417410562412c56587ed0",
+      "width": 72,
+      "height": 91,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/compare_selected_84x91.svg",
+      "bytes": 413,
+      "sha256": "097fcb47ce5cae1b8868be27d42861ed9ecab85c04a0b0dc6aa4e282e62439e8"
+    },
+    {
+      "path": "04_CONTROLS/buttons/compare_selected_84x91_disabled.png",
+      "bytes": 601,
+      "sha256": "c317a43ae655070723bc7247bd78673c40bc244b1a4e68208d54be1819841fca",
+      "width": 84,
+      "height": 91,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/compare_selected_84x91_down.png",
+      "bytes": 1290,
+      "sha256": "2413bfe1cd848d1b9c8b5ce6535e3a070728abb1658b7cef4b45564d4952a5ad",
+      "width": 84,
+      "height": 91,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/compare_selected_84x91_hover.png",
+      "bytes": 1506,
+      "sha256": "ca2356ba3650c2a6f70d7e54bb7df516b0c263242a58d9a1bf2bce35355c9678",
+      "width": 84,
+      "height": 91,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/compare_selected_84x91_normal.png",
+      "bytes": 642,
+      "sha256": "88e55988f2d5f7995fd7ce628ce7e8cb13e1e6fbfc5e593c643e19ed760f1e58",
+      "width": 84,
+      "height": 91,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/copy_scale_282x31.svg",
+      "bytes": 417,
+      "sha256": "1228229f7b4f3805f654037cedd5dc78440f627f5f5ddc8292e20fb41089bfcd"
+    },
+    {
+      "path": "04_CONTROLS/buttons/copy_scale_282x31_disabled.png",
+      "bytes": 484,
+      "sha256": "b7e2c3fb02d4a481d113e131d3b00ef133b49180a9d627e4f1189cff05ef7b3c",
+      "width": 282,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/copy_scale_282x31_down.png",
+      "bytes": 1097,
+      "sha256": "55b04fd86c647c3a7c67c59ba8b519bdb3282320ced7fd9f2c23b0a22fd14635",
+      "width": 282,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/copy_scale_282x31_hover.png",
+      "bytes": 1291,
+      "sha256": "bc082eda2c869f69adf67b1f5d98f1fdd5a1714ed88176f5e04079002ab1b56b",
+      "width": 282,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/copy_scale_282x31_normal.png",
+      "bytes": 533,
+      "sha256": "521cf7bb881984a33093696a4d23d5c940d484b31c92beb916f86280dedaebf5",
+      "width": 282,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_cyan_190x44.svg",
+      "bytes": 417,
+      "sha256": "cfdb53b24be5687202a69495610fd4957231a3b7ba8d34d882932df0ff047bce"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_cyan_190x44_disabled.png",
+      "bytes": 545,
+      "sha256": "ccebe84dc0633ade71b47360f53dccc65f56a3ea18bb6c6565df65aec5e20722",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_cyan_190x44_down.png",
+      "bytes": 1234,
+      "sha256": "2823b650d974e71c728a6cdfe2b1bbf279daddc1ddcd1f17bee7c17a96cd1a53",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_cyan_190x44_hover.png",
+      "bytes": 1537,
+      "sha256": "c9e318e146f495e5fd3c3f5c5641a0a432b0fba7668ce2e255d3b7bdc9e19db0",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_cyan_190x44_normal.png",
+      "bytes": 601,
+      "sha256": "92e54ff4dd715247e8e129bb780891e3a958225ce53826d7ddceb97dfdf5bbba",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_gold_190x44.svg",
+      "bytes": 417,
+      "sha256": "7f8ce8c94f38d2236fdf54cd57ea624508ccb3e330f060f2c70be06d95a2971f"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_gold_190x44_disabled.png",
+      "bytes": 545,
+      "sha256": "ccebe84dc0633ade71b47360f53dccc65f56a3ea18bb6c6565df65aec5e20722",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_gold_190x44_down.png",
+      "bytes": 1440,
+      "sha256": "38d8fc77861070e0e302097a5555d0bcc0aced23d4a43ba425267750f420a90b",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_gold_190x44_hover.png",
+      "bytes": 1595,
+      "sha256": "bd70412697a970afef2c8dfcc63f735db377eb93da3873ab82216f71a83fbdfb",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_gold_190x44_normal.png",
+      "bytes": 606,
+      "sha256": "790fff53ac084394bb495dd1d391222cd05387822ca3cf90a80f962ff65fbad1",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_violet_190x44.svg",
+      "bytes": 417,
+      "sha256": "7e911a7b9cef10b1de3c181178f240fb9745a2c8687046e30b7f27804d4edbc4"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_violet_190x44_disabled.png",
+      "bytes": 545,
+      "sha256": "ccebe84dc0633ade71b47360f53dccc65f56a3ea18bb6c6565df65aec5e20722",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_violet_190x44_down.png",
+      "bytes": 1293,
+      "sha256": "474bb58b9d6be67da47399182c46641d289f111c289c13417fe47f20fec283d3",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_violet_190x44_hover.png",
+      "bytes": 1482,
+      "sha256": "2e320acff9d832453d127245367471ba423808ae58d7d22132ca8b8f4591bec3",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/main_violet_190x44_normal.png",
+      "bytes": 608,
+      "sha256": "cd98664912969eb452e30169c3f7bc7e3d644460b2e1ad86e9955111a73904a9",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/neutral_190x44.svg",
+      "bytes": 417,
+      "sha256": "b9d5bc68ca4f592c1412f1118327982f0ff8c9864733b3d5a2660ceb64a9a658"
+    },
+    {
+      "path": "04_CONTROLS/buttons/neutral_190x44_disabled.png",
+      "bytes": 545,
+      "sha256": "ccebe84dc0633ade71b47360f53dccc65f56a3ea18bb6c6565df65aec5e20722",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/neutral_190x44_down.png",
+      "bytes": 1202,
+      "sha256": "e8f082529b101799209948cba0ac21142279f9546f683b0b1abec79799918b0a",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/neutral_190x44_hover.png",
+      "bytes": 1346,
+      "sha256": "5e8ab0ced38f51562b4cdbd61f7f9d43c511c7917a2253c977fee31c8b6a6562",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/neutral_190x44_normal.png",
+      "bytes": 607,
+      "sha256": "a26b3b4cacdbd1a2664233ea779353b4b29487c855617b5ff5573ad6a78bb1a6",
+      "width": 190,
+      "height": 44,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/note_chip_36x28.svg",
+      "bytes": 413,
+      "sha256": "a9ed82ed06b817fbf25cf5064d5c4c0e35bf63121bd7fff3940b12916daca3fd"
+    },
+    {
+      "path": "04_CONTROLS/buttons/note_chip_36x28_disabled.png",
+      "bytes": 369,
+      "sha256": "10a98a914d2c6604730f1a8bb6bdeab3c9c16f56fc5e733f547914322e917a40",
+      "width": 36,
+      "height": 28,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/note_chip_36x28_down.png",
+      "bytes": 801,
+      "sha256": "6c90d327740c651e198839dfe4499f21f86d14ebc600aff5303fe3ccd74365f2",
+      "width": 36,
+      "height": 28,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/note_chip_36x28_hover.png",
+      "bytes": 990,
+      "sha256": "9ef8398d88dd94d463912e75546e4d994c2e2dce9f77744bbb04302b8660e8dc",
+      "width": 36,
+      "height": 28,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/note_chip_36x28_normal.png",
+      "bytes": 417,
+      "sha256": "4a3c2b5dc8e8c11622f2807f33379b8ceab6aa0262a5349e50e2e3611ad681f8",
+      "width": 36,
+      "height": 28,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/preset_field_338x52.svg",
+      "bytes": 419,
+      "sha256": "a4a116f3062392f01c80227122a643f693b92178bcd430f02e72fcaef9e7b7a6"
+    },
+    {
+      "path": "04_CONTROLS/buttons/preset_field_338x52_disabled.png",
+      "bytes": 806,
+      "sha256": "775d980c877a87783aece96f3f34348cb48a5988502d0b7edbd7977688e8c490",
+      "width": 338,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/preset_field_338x52_down.png",
+      "bytes": 1874,
+      "sha256": "03bf27fbbbd688a59e9faf3587e39b2b018728c1f60110a645f3f33c2cfed0a1",
+      "width": 338,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/preset_field_338x52_hover.png",
+      "bytes": 2277,
+      "sha256": "a828276448c1bbae316935b6dc27a899740862639eb8822dcc6f1fb41389f7dc",
+      "width": 338,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/preset_field_338x52_normal.png",
+      "bytes": 861,
+      "sha256": "8ae2c9646770b2c0527f29ab166ebdc9fe56f20b23acb545c0c8f2443e1eb829",
+      "width": 338,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/preset_nav_60x52.svg",
+      "bytes": 415,
+      "sha256": "2c1d48f5194d543d0d5f72e07fce313bea54a80bd9931dcb202032fa2eabb434"
+    },
+    {
+      "path": "04_CONTROLS/buttons/preset_nav_60x52_disabled.png",
+      "bytes": 635,
+      "sha256": "de9881a60becfd00b890dcc17a3d2aef5ae6c1fac8b909df05f85a771e26ee11",
+      "width": 60,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/preset_nav_60x52_down.png",
+      "bytes": 1518,
+      "sha256": "c1ba94d8810c0406db0db9a0ba5630d847bcdee461855fbd062c7a4e89c606e8",
+      "width": 60,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/preset_nav_60x52_hover.png",
+      "bytes": 1902,
+      "sha256": "653d408e7b814fc3f4a0fbc1da8fec1e25e095028338ee018379f183169c1196",
+      "width": 60,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/preset_nav_60x52_normal.png",
+      "bytes": 685,
+      "sha256": "3c34ec7ecb8df65ec02b07adb455aa15f3d81c9cec1319993fa7ea28af0e6e73",
+      "width": 60,
+      "height": 52,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/profile_169x42.svg",
+      "bytes": 417,
+      "sha256": "880f7bce2ca4957283a712ce5af3e494a76f66c973348a934d55fef71acce71a"
+    },
+    {
+      "path": "04_CONTROLS/buttons/profile_169x42_disabled.png",
+      "bytes": 492,
+      "sha256": "5d3784e9d981cc532ed6c8b84dc0d64b0fd9a736e4a00cfb7a595adebc16168f",
+      "width": 169,
+      "height": 42,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/profile_169x42_down.png",
+      "bytes": 1162,
+      "sha256": "95e4f5d478dd63b705bd173172c04c8caf248182af2a2200fdb4417d114072db",
+      "width": 169,
+      "height": 42,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/profile_169x42_hover.png",
+      "bytes": 1328,
+      "sha256": "ee70bafd56ec6f6c0df5a300a7f3d298e50c789bfc4ddfccc0b34d27bba4a077",
+      "width": 169,
+      "height": 42,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/profile_169x42_normal.png",
+      "bytes": 538,
+      "sha256": "2453d49a1e5f417f3d94e8cfa3bc2bf79d9416176ef93fdefc2315afa3580488",
+      "width": 169,
+      "height": 42,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/range_test_177x42.svg",
+      "bytes": 417,
+      "sha256": "a5410bd5e5b0dbf1229d07ffe78f44f0b04c4b751ae7be46ea9811f912cdee81"
+    },
+    {
+      "path": "04_CONTROLS/buttons/range_test_177x42_disabled.png",
+      "bytes": 496,
+      "sha256": "c66563226c550c8d58aefdcb9d7f37225b6148cb47d64164a9e08f8be584780d",
+      "width": 177,
+      "height": 42,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/range_test_177x42_down.png",
+      "bytes": 1243,
+      "sha256": "8edbe7273be17f042eb3315ad6681486eb89eaf5f6563e0608b641d23bf79f5f",
+      "width": 177,
+      "height": 42,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/range_test_177x42_hover.png",
+      "bytes": 1278,
+      "sha256": "93074ef411026440d6974d57d138943ab3cc602881503738cab3c25a5e220f7f",
+      "width": 177,
+      "height": 42,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/range_test_177x42_normal.png",
+      "bytes": 549,
+      "sha256": "cdaf1d2758f77fde243b47d5fe0265889f385678d86bf13110a39ce7c0cee42a",
+      "width": 177,
+      "height": 42,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/solo_157x31.svg",
+      "bytes": 417,
+      "sha256": "dcb5202e919985725171b967cb81d81f4391fbe89a5c4953e2419da96a9f7f6a"
+    },
+    {
+      "path": "04_CONTROLS/buttons/solo_157x31_disabled.png",
+      "bytes": 451,
+      "sha256": "dc4e1a83ee39b98e64a8a06df5e6b619ac60d9b69b8262097a0673eb02b66a41",
+      "width": 157,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/solo_157x31_down.png",
+      "bytes": 1102,
+      "sha256": "1b0b7679c0226065e38949ca70f89f082c36bd89f2c2837032acad957b8f971b",
+      "width": 157,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/solo_157x31_hover.png",
+      "bytes": 1214,
+      "sha256": "00a175c630740aa1715608863e95e5c65743c29660666fad5a94824892baf6b6",
+      "width": 157,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/solo_157x31_normal.png",
+      "bytes": 499,
+      "sha256": "02cedfb390469001393053769068324d7a99769f6e8bc5874f4b260d1e61e231",
+      "width": 157,
+      "height": 31,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_64x48.svg",
+      "bytes": 413,
+      "sha256": "d631d29635e1f0ae9b1ca92f8d43ee46e8aa944a3791f983e6013eda1dbd7d0c"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_64x48_disabled.png",
+      "bytes": 409,
+      "sha256": "199e9c548a536669eee4b9c409c1f632ce9a79df450ab42ee6ffa02c27b8642d",
+      "width": 64,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_64x48_down.png",
+      "bytes": 1068,
+      "sha256": "99664da7647f08d167dad32208ccf45c3b48a267c8611cef36a72e45106faa91",
+      "width": 64,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_64x48_hover.png",
+      "bytes": 1254,
+      "sha256": "5fbf5134b34747ee61296f06a413f96d5ea75b2df4c5d4876e8f2f29729f7959",
+      "width": 64,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_64x48_normal.png",
+      "bytes": 449,
+      "sha256": "94147dfc3ba2511624e5281f0e5d2ab23b270dc87ce65e2403ac83fdedf50982",
+      "width": 64,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_original_92x48.svg",
+      "bytes": 413,
+      "sha256": "26854aadb46e27370e6cd9dc90361c9e1d75f633b1a93805c902ed7c90c9f74c"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_original_92x48_disabled.png",
+      "bytes": 455,
+      "sha256": "75cc622192a776848f5d959905a82d024a730ed237966edd9377553a6d27a02a",
+      "width": 92,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_original_92x48_down.png",
+      "bytes": 1096,
+      "sha256": "0a160757ba0c2395180bac94eb351b791e5403d31c07e29722fb6f4935f8ce83",
+      "width": 92,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_original_92x48_hover.png",
+      "bytes": 1277,
+      "sha256": "c952523bfa4e339b028bdab882490c2a8daf6fbd45654416114c9ca998e0d62f",
+      "width": 92,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_original_92x48_normal.png",
+      "bytes": 492,
+      "sha256": "59b167f76c29b6688d50e1b307895e9611d3e4edddcb7066b5426a79963b94ad",
+      "width": 92,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_selected_64x48.svg",
+      "bytes": 413,
+      "sha256": "d631d29635e1f0ae9b1ca92f8d43ee46e8aa944a3791f983e6013eda1dbd7d0c"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_selected_64x48_disabled.png",
+      "bytes": 409,
+      "sha256": "199e9c548a536669eee4b9c409c1f632ce9a79df450ab42ee6ffa02c27b8642d",
+      "width": 64,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_selected_64x48_down.png",
+      "bytes": 1068,
+      "sha256": "99664da7647f08d167dad32208ccf45c3b48a267c8611cef36a72e45106faa91",
+      "width": 64,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_selected_64x48_hover.png",
+      "bytes": 1254,
+      "sha256": "5fbf5134b34747ee61296f06a413f96d5ea75b2df4c5d4876e8f2f29729f7959",
+      "width": 64,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/transpose_selected_64x48_normal.png",
+      "bytes": 449,
+      "sha256": "94147dfc3ba2511624e5281f0e5d2ab23b270dc87ce65e2403ac83fdedf50982",
+      "width": 64,
+      "height": 48,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/utility_50x50.svg",
+      "bytes": 415,
+      "sha256": "49c17ed7cd1597c9171e02c68f6b5797092f57c3b4afa4406bf41d4276a085b8"
+    },
+    {
+      "path": "04_CONTROLS/buttons/utility_50x50_disabled.png",
+      "bytes": 538,
+      "sha256": "e5f4a4324ec632920797affc782864c991fa42d1c3aae6164396c2ac207e07cf",
+      "width": 50,
+      "height": 50,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/utility_50x50_down.png",
+      "bytes": 1203,
+      "sha256": "6c49a026b3298ce49bcd7a0d3de1d584283e0afd73037f8c5dfd7a8badd67790",
+      "width": 50,
+      "height": 50,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/utility_50x50_hover.png",
+      "bytes": 1508,
+      "sha256": "c6f73c83fe467692029035b2961b198682c6fc6dc2e36d6c815181cae2802c95",
+      "width": 50,
+      "height": 50,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/buttons/utility_50x50_normal.png",
+      "bytes": 588,
+      "sha256": "75c6ba914f4a2171decb6a4b26967b6bcec3501b518f06e980138306bc6150b7",
+      "width": 50,
+      "height": 50,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/knobs/macro_knob_cyan_160px_128frames_vertical.png",
+      "bytes": 3887737,
+      "sha256": "124bef5df2a31f93b49e91f925b6381dad67a88fcac08e4029bd0fdedfa7e902",
+      "width": 160,
+      "height": 20480,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/knobs/macro_knob_gold_160px_128frames_vertical.png",
+      "bytes": 3917128,
+      "sha256": "aa568fc9c64f77c51b1caff4c56e2a02b0a64bbbebac2f151e9216cdc0f5d595",
+      "width": 160,
+      "height": 20480,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/knobs/small_knob_cyan_96px_128frames_vertical.png",
+      "bytes": 1642374,
+      "sha256": "4d33cec46131af6db507af5b90a58f6484bb68fa26dd93243396667b80836e32",
+      "width": 96,
+      "height": 12288,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/meters/confidence_fill_cyan_180x8.png",
+      "bytes": 307,
+      "sha256": "353aca1195ff66fc022212c5dc43ae4032a480bd8eede6276f624bbedfe4b25b",
+      "width": 180,
+      "height": 8,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/meters/confidence_track_180x8.png",
+      "bytes": 167,
+      "sha256": "f54040267d9393bbef6b5fcc3b5ca10c61d8ff6a50f75656f26f78de2a635d24",
+      "width": 180,
+      "height": 8,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/meters/meter_segment_cyan_12x5.png",
+      "bytes": 180,
+      "sha256": "e6e4725ebd5ce3e191b09990d005b5b0afc2be313c2d3612781d8b523826372c",
+      "width": 12,
+      "height": 5,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/meters/meter_segment_gold_12x5.png",
+      "bytes": 183,
+      "sha256": "98b6dda53046a9398b18f73826d9d8f30a7135e6b3bd4db1ed9a90a27145ef96",
+      "width": 12,
+      "height": 5,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/meters/meter_segment_red_12x5.png",
+      "bytes": 178,
+      "sha256": "096bd8403b6353157a3471e1a6af65c2ec6fe8d1d4cb131eeceaeeda5bb1d013",
+      "width": 12,
+      "height": 5,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/meters/meter_segment_violet_12x5.png",
+      "bytes": 188,
+      "sha256": "4301353149044046313e529b51dbc3e898771cd7d8607868bcb3f21e6bdb9f83",
+      "width": 12,
+      "height": 5,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/meters/stereo_meter_trough_78x124.png",
+      "bytes": 585,
+      "sha256": "b7ca48837b9373af426d5ce7b5583a727965cc50fc018f5bd7003eff2a9d73b1",
+      "width": 78,
+      "height": 124,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/toggles/toggle_off_68x32.png",
+      "bytes": 365,
+      "sha256": "38d3dfe0e6a5acbf32512c65a0ad3b8bd3ec745cbd742302e814a65f964aa946",
+      "width": 68,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/toggles/toggle_on_cyan_68x32.png",
+      "bytes": 1851,
+      "sha256": "be354b4fac827e3ce431d5b3a8cacffc745b2ef54d25d44abc2105c4fd825dae",
+      "width": 68,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/toggles/toggle_on_gold_68x32.png",
+      "bytes": 1926,
+      "sha256": "f1c56087badeb86727c5937320f83beaea40eef5f566b81865b95ca5cedb1cad",
+      "width": 68,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "04_CONTROLS/toggles/toggle_on_violet_68x32.png",
+      "bytes": 1843,
+      "sha256": "5314b2f192919ffff3cf951b8de42aeb5e922b7b616802090a956694375c617f",
+      "width": 68,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/analysis_row_hover_343x32.png",
+      "bytes": 410,
+      "sha256": "1be31eab58a7593aa99839891dcd7e008911d5dd082c0bab064ec8b404fb1dc1",
+      "width": 343,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/analysis_row_normal_343x32.png",
+      "bytes": 326,
+      "sha256": "51a7543f305cad1c59ca3ee4ccb91199b15071390b4aef7cecb3e122dcd6c340",
+      "width": 343,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/analysis_row_selected_343x32.png",
+      "bytes": 409,
+      "sha256": "3f4cd74a1bbaf4f56ea13821d39d8b7fe3dbce81631381139f1e54f6c5e36325",
+      "width": 343,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/drop_zone_active_343x60.png",
+      "bytes": 461,
+      "sha256": "7bd181f5121b535d25aa930df6ec8cd43cd99d9282ce04c818dd4b1220063920",
+      "width": 343,
+      "height": 60,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/drop_zone_hover_343x60.png",
+      "bytes": 461,
+      "sha256": "aece3c6506be8e9cc4227229b81694efc6f76c2b416b8da1593c1da89883e376",
+      "width": 343,
+      "height": 60,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/drop_zone_normal_343x60.png",
+      "bytes": 483,
+      "sha256": "847fa1b0278ec15c1b7f4c6d8a01bac156b0b8814be24826f9adb7e937fb825a",
+      "width": 343,
+      "height": 60,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/panel_header_440x42.png",
+      "bytes": 597,
+      "sha256": "769cb615a7a66b19e200c36edbda01bed2c822838c64485b8229b5a02867999a",
+      "width": 440,
+      "height": 42,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/readout_cell_cyan_124x60.png",
+      "bytes": 496,
+      "sha256": "c258154dbf6d773b53c2a61abe3a017f29b75b10465e61528966254e86214c2f",
+      "width": 124,
+      "height": 60,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/readout_cell_gold_124x60.png",
+      "bytes": 502,
+      "sha256": "0380f7b0fb0e1356a21b2456fb88dd1f3ea2822dd295f616b519224f37cdec94",
+      "width": 124,
+      "height": 60,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/readout_cell_violet_124x60.png",
+      "bytes": 502,
+      "sha256": "70dc79f4af1d7a18b05efa5cb6775f30cbc74230c7fb4573d57e42ca23c55dcf",
+      "width": 124,
+      "height": 60,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/transpose_result_highlight_354x116.png",
+      "bytes": 1723,
+      "sha256": "0556ecad8a53120f7a31e0bae1d9a8ad95ef88ab1d9c2dd1644e8b4449399fe3",
+      "width": 354,
+      "height": 116,
+      "mode": "RGBA"
+    },
+    {
+      "path": "05_PANELS_CARDS/transpose_result_normal_354x116.png",
+      "bytes": 904,
+      "sha256": "deaf6ddae91ac7e250e1d26de851e027ad5a997d4bc3dabf2f71cc22eb78d6eb",
+      "width": 354,
+      "height": 116,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/VISUALIZER_RENDERING_NOTES.md",
+      "bytes": 761,
+      "sha256": "2e075e10dd5b648b3813376ad9cf7846007500e10e577ee02efa4536847d29f5"
+    },
+    {
+      "path": "06_VISUALIZERS/artist_range_grid_690x330.png",
+      "bytes": 1928,
+      "sha256": "57e44d05629461a2dc1ca729201182ea868d33babbc7cf13f3730ef729a6dad2",
+      "width": 690,
+      "height": 330,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/horizontal_note_map_720x110.png",
+      "bytes": 909,
+      "sha256": "9e20c4583a0dbb3f80aafdb7352fc138f3cacc55a21288a5b77212caa01a63cd",
+      "width": 720,
+      "height": 110,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/particle_glow_cyan_128.png",
+      "bytes": 10640,
+      "sha256": "f5c673388e214e80e63bef61f3dbd1f918c7809eccc580f1adcddfd1cf23bb05",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/particle_glow_gold_128.png",
+      "bytes": 10553,
+      "sha256": "a96e8bfe97cb63491cdbc052bd805173766d32c8ad6092d6416488c0f2765600",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/particle_glow_violet_128.png",
+      "bytes": 11757,
+      "sha256": "dd6b35b9f9f7b07c3a4f31bc8487f6037f521b5b40c0d3dc8904013c21b8f614",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/pitch_trail_demo_690x330.png",
+      "bytes": 32449,
+      "sha256": "b1529fdba3d9b862ac8b77bcde2897839ece04d0d5cfc072882c997f35e29acf",
+      "width": 690,
+      "height": 330,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/spectrum_demo_bars_720x220.png",
+      "bytes": 45316,
+      "sha256": "eb6202247493b4799e607d8f47a12915a9036e9df5c1f4f80d0578cd8f42e007",
+      "width": 720,
+      "height": 220,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/spectrum_grid_720x220.png",
+      "bytes": 1508,
+      "sha256": "fafa33b8f15bc9e4846bc882ad917660eb51a042dabecc07d84bc401b40941d9",
+      "width": 720,
+      "height": 220,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/tuner_dial_gold_512.png",
+      "bytes": 61721,
+      "sha256": "f3e08ac62a16d1eb520150cdef434f3a69dbb88f205b1e80823ed8c777775653",
+      "width": 512,
+      "height": 512,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/vertical_piano_88x440.png",
+      "bytes": 1290,
+      "sha256": "6161e5f09d7b5b3f2b770b6573bb945e62deee35c07872ca4c3f3a6847b435e2",
+      "width": 88,
+      "height": 440,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/waveform_demo_gold_640x220.png",
+      "bytes": 37478,
+      "sha256": "70f2dfce40e9564b4b39c59d2af9d08f0fb5fd3929b606ff95f76ffc6f3682cf",
+      "width": 640,
+      "height": 220,
+      "mode": "RGBA"
+    },
+    {
+      "path": "06_VISUALIZERS/waveform_grid_640x220.png",
+      "bytes": 1372,
+      "sha256": "564b802820f14a1b43bebe3bff43f06513f289f93723a08cba15b67ecc16b4d5",
+      "width": 640,
+      "height": 220,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/alternatives.svg",
+      "bytes": 273,
+      "sha256": "ef62149c6bc2a692ced5a81289c572c4dd3386c352127d271c55edb385ab0ff6"
+    },
+    {
+      "path": "07_ICONS/alternatives_32.png",
+      "bytes": 528,
+      "sha256": "01ee8a21cdd2f5d88beb1a97b452ce0b92960111a87b298decf0da7884a397de",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/alternatives_64.png",
+      "bytes": 872,
+      "sha256": "17ec8c4bfc7d96f35246b519b4429fdca2501d2322294354b6ca12fc57c8f559",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/brain.svg",
+      "bytes": 350,
+      "sha256": "b85dab73e0b4f784a56b5a50e0b85d86ab211c1af68072541a5016a634fa7d64"
+    },
+    {
+      "path": "07_ICONS/brain_32.png",
+      "bytes": 1131,
+      "sha256": "d4a27e5967388dd7be1181bfb1a674c8320a0bc2a3fe8653c4e4b296800688ad",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/brain_64.png",
+      "bytes": 2351,
+      "sha256": "49c4f6f0c0e3d3c5fd1d3bebf67387ef54249cf057a96e6acb4380d80ef7ee13",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/chevron_left.svg",
+      "bytes": 241,
+      "sha256": "b4b5b5834bbc44c136d4f0deeeb336b60f2b8860ae760a0203730bfc8958d2b1"
+    },
+    {
+      "path": "07_ICONS/chevron_left_32.png",
+      "bytes": 288,
+      "sha256": "b7dcf3e952c8abc5c3c3e4db1901a6e6c5cea6a9568fc3d9add73f39ffdfbb78",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/chevron_left_64.png",
+      "bytes": 581,
+      "sha256": "87f5fa76a8c6fc9063fc8d5cf05fbeb38abeaf5de6e6acb5eb434813c63873bd",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/chevron_right.svg",
+      "bytes": 240,
+      "sha256": "21e8fa8515d9d5185d8abeeb582cc6351b0adcc1ee6588cf8df3f848872318a2"
+    },
+    {
+      "path": "07_ICONS/chevron_right_32.png",
+      "bytes": 276,
+      "sha256": "6606e7cf3c14470f9113cb22d41756c845638f519c64329a8345e22de6f0ae49",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/chevron_right_64.png",
+      "bytes": 508,
+      "sha256": "b114f9527e72a74c0add0813985127fe87418dd8646cee926385d58e74b4512f",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/confidence.svg",
+      "bytes": 266,
+      "sha256": "2df653d43f51288008cfe4b624ebe836fdbd894cc26792acd5c0200851501948"
+    },
+    {
+      "path": "07_ICONS/confidence_32.png",
+      "bytes": 482,
+      "sha256": "c5bd35893c059b5ade3bd917d76cbb88171f7c630d5e26c4fe9a9f13c9a08bd2",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/confidence_64.png",
+      "bytes": 781,
+      "sha256": "2e0a035afc77276569347892b53f8982f4146d34f5bc7a243d182138cb01ae42",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/copy.svg",
+      "bytes": 327,
+      "sha256": "e3c8418a757fd6434b4a743633b74fae9de4e6c24d359f0c7a1e8ce82cd7661a"
+    },
+    {
+      "path": "07_ICONS/copy_32.png",
+      "bytes": 605,
+      "sha256": "bb5d21f03fd6d657785ac14c77e37a0e0fcb797abee75ca43f427045f4097f12",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/copy_64.png",
+      "bytes": 1091,
+      "sha256": "c3ff5fe6344c61e41d177e7005ba5dc37ad4fd9e03d0a33d84eb032c8f7c1014",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/help.svg",
+      "bytes": 317,
+      "sha256": "21deeb490247e29cd939042c44ff3924a96021b084d3543b4d416d1a4fa60888"
+    },
+    {
+      "path": "07_ICONS/help_32.png",
+      "bytes": 675,
+      "sha256": "da7219a251c75cad3c793c2b99c192b1d7b8942f165fdd2d457a27e72a1336fe",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/help_64.png",
+      "bytes": 1310,
+      "sha256": "a3f6ba558fb595906462fb6c25f029e055dad7a1b5d9906c1714866f33fa9afa",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/key.svg",
+      "bytes": 282,
+      "sha256": "ab4646ffb285bd90a942192def54ca1471e123c2de3a272d30a328e1aec28924"
+    },
+    {
+      "path": "07_ICONS/key_32.png",
+      "bytes": 560,
+      "sha256": "583775f1b4528fc7f22a1c0707ab66d19a0d03042836a81cf5fd43cd3fb16a56",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/key_64.png",
+      "bytes": 1005,
+      "sha256": "fee1279213ca3490a1ecd9ea01ac8e1181eb7c6c629d4a82b2a63df3b4b05a47",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/mic.svg",
+      "bytes": 308,
+      "sha256": "dbfb5451c219381eaf7d245121c2a549bc9e06463054f30856224b9433a55b6c"
+    },
+    {
+      "path": "07_ICONS/mic_32.png",
+      "bytes": 856,
+      "sha256": "e80a396b5efe79230b75f1752a506f31a2103a9e7a64d114f169fdf80bfc9fa1",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/mic_64.png",
+      "bytes": 1682,
+      "sha256": "5289ad23e3f8141ee1cb5aef56c97093365e5dcc7da3e4b358db8eccbefcf8f2",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/power.svg",
+      "bytes": 252,
+      "sha256": "1343ec580ebdaab33cb7261b6a7a03eec59e209a1f8c7339b772653b0835a94b"
+    },
+    {
+      "path": "07_ICONS/power_32.png",
+      "bytes": 854,
+      "sha256": "c7deb50cbb8c836d9134f20717fc27d0298bc5bd096e774ffca9f9543ac4df79",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/power_64.png",
+      "bytes": 1756,
+      "sha256": "315f843dfc94d9fb0eba2f5439d4a0f41c5cc66c74955a28641a7a4be5368720",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/profile.svg",
+      "bytes": 282,
+      "sha256": "8dd24c508f4a3689ea712d6a3083b8c6de16f92edd1b7fd8f8aad4a96d16a442"
+    },
+    {
+      "path": "07_ICONS/profile_32.png",
+      "bytes": 793,
+      "sha256": "4eef2ac243e6cbbc40c41eb9c7cb60e04f74066d4b20588130e304cc98d16944",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/profile_64.png",
+      "bytes": 1578,
+      "sha256": "361d806741b2dbdf52870622355d36e1bdb7b50403b700c408da46357793f149",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/redo.svg",
+      "bytes": 264,
+      "sha256": "83e9d305af29831414569b596a77e714e67f51627844a007b2d97ce092c0d7c3"
+    },
+    {
+      "path": "07_ICONS/redo_32.png",
+      "bytes": 648,
+      "sha256": "c1a8b8cce4319cf0ecad45bf558bd017799f91dd3b05295a2bd096674621439f",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/redo_64.png",
+      "bytes": 1177,
+      "sha256": "b810c09fb6757c05be64e1c848c54d0b26d5ac4318bde80bc4fd38652eb049d6",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/save.svg",
+      "bytes": 266,
+      "sha256": "1e8519670182459887b2e04d2dbace43f0e843da088f2107842890576552773c"
+    },
+    {
+      "path": "07_ICONS/save_32.png",
+      "bytes": 389,
+      "sha256": "9e3a2850ded63e97c2e054c7783764e57d1a02558aff1f11e3efdbfea7458d64",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/save_64.png",
+      "bytes": 601,
+      "sha256": "de0204998cb280cdaf8244a1ec732ed19d68ef4f181e8778a9b5b9505d8b9bc0",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/settings.svg",
+      "bytes": 337,
+      "sha256": "d8e0950fdb9c05b70058c4ae7b2282a7942d739b7310c1560cc62fb330680133"
+    },
+    {
+      "path": "07_ICONS/settings_32.png",
+      "bytes": 729,
+      "sha256": "50f7a45c54048cebc89cc3178152cb8045d9a88c96f4e9d1c5b79b0d9fbca190",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/settings_64.png",
+      "bytes": 1332,
+      "sha256": "052ef75466656b19d37b374649e33b82cac74f1f02ba6a9cf31fe768e0e6f467",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/speaker.svg",
+      "bytes": 300,
+      "sha256": "cc50cc42e23c0c3e7bb4168b147c80672116883b2b8e9d720e2096232b827259"
+    },
+    {
+      "path": "07_ICONS/speaker_32.png",
+      "bytes": 863,
+      "sha256": "a4dee8d08b58523605b4e81cbc310a317637b23c8361c7a4b85b09a6684b23d7",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/speaker_64.png",
+      "bytes": 1658,
+      "sha256": "dd36ce3a3bbd7c093024cb9593ef8a181be798a7bce08928c20387c26295ee3a",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/tempo.svg",
+      "bytes": 299,
+      "sha256": "1cc39c6527a09a9994c7d8401e2218352c7328d946f19d4a4369e1263ff43512"
+    },
+    {
+      "path": "07_ICONS/tempo_32.png",
+      "bytes": 667,
+      "sha256": "1df15d6f1dceb6f4712ccf953460ac3458a147a09bac5b276e2402518dcba37d",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/tempo_64.png",
+      "bytes": 1319,
+      "sha256": "f7c21df4a55a8b8b7e6312d915019c2cf001162566fbc4000f562e9385aa157e",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/tuning.svg",
+      "bytes": 273,
+      "sha256": "26dd7a4903dec850c47b6d14fc446dfd76fc5929c67596b7294ae8c73333739e"
+    },
+    {
+      "path": "07_ICONS/tuning_32.png",
+      "bytes": 689,
+      "sha256": "50e2b35d729e826c17ff2ae6207781ff65f29052bf76f079cd2aa65fdbb436a2",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/tuning_64.png",
+      "bytes": 1074,
+      "sha256": "1e01941936742349dae8c420ffa4fb3f1639c462666860478f75dc24bf15182c",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/undo.svg",
+      "bytes": 264,
+      "sha256": "67fa501933dc934a935c8d0780fb1cce88fdcf36fd845411a4e8f7ed768d9c74"
+    },
+    {
+      "path": "07_ICONS/undo_32.png",
+      "bytes": 633,
+      "sha256": "54c465081ee60aea2b3f3ccb5c46580bdbffc3aca2386bbccff1c5c33b9ff866",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/undo_64.png",
+      "bytes": 1199,
+      "sha256": "06d5b8e34fd7944ccb5e8cbe3bb737b8efd51f46f58d4b2b5535612eec3c9e28",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/upload.svg",
+      "bytes": 261,
+      "sha256": "58883a775c7e59beec21c2e2aa2569f5a4b0efebdc5cb3d7a746bb1081fea16f"
+    },
+    {
+      "path": "07_ICONS/upload_32.png",
+      "bytes": 524,
+      "sha256": "9dc642447caa72386eedad82e8b3246e3f696eec002fa854a0ed027a5fe03ac7",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/upload_64.png",
+      "bytes": 926,
+      "sha256": "8341717a89305da859aec6cfd156f6a4350c6843b13f4869e97a04ff9b22009d",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/wave.svg",
+      "bytes": 254,
+      "sha256": "d17239dbdab7b76ed55c3fdd51ede0acfd4ba08795227116052e9ca6f1b45a4f"
+    },
+    {
+      "path": "07_ICONS/wave_32.png",
+      "bytes": 746,
+      "sha256": "518c734092c39448b48e54196e7d855d6c07a708b34abfad5aacacbaf4928aae",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA"
+    },
+    {
+      "path": "07_ICONS/wave_64.png",
+      "bytes": 1498,
+      "sha256": "ebfe07aee20c77770ad1faf9c963a0cbb95f1684d4e87033864f1e44103d3781",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA"
+    },
+    {
+      "path": "08_LAYOUT/analysis_data_contract.json",
+      "bytes": 960,
+      "sha256": "13c3a0812e919986cab0749c9e9d4078a5f2527dfedb96618a3cbfa4e9beec27"
+    },
+    {
+      "path": "08_LAYOUT/animation_tokens.json",
+      "bytes": 1235,
+      "sha256": "318c9fddc2ace8195f261958962d093c13d14c0fff2d0f31d4378d9fbb690df9"
+    },
+    {
+      "path": "08_LAYOUT/color_tokens.json",
+      "bytes": 784,
+      "sha256": "26b60a6b1554e181296eaa6a80d140a9bde8bb72dc1e4b55f38b9c0f1ec593e1"
+    },
+    {
+      "path": "08_LAYOUT/control_map.csv",
+      "bytes": 1932,
+      "sha256": "88b422f6bfb60caab3dea2b4044a791c942a49aeec8375c24e43e01e24f8f53b"
+    },
+    {
+      "path": "08_LAYOUT/layout_1491x1055.json",
+      "bytes": 3845,
+      "sha256": "75022e4268ba0837aa6813cf9408bd9d97e61481d739c91ceb4e37a923d72420"
+    },
+    {
+      "path": "08_LAYOUT/parameters.json",
+      "bytes": 2082,
+      "sha256": "790a265bdf0c637d8808e4441a9df32367013fe8b0133dd8bd783e069433c4e4"
+    },
+    {
+      "path": "08_LAYOUT/responsive_rules.md",
+      "bytes": 697,
+      "sha256": "29abe6ef6309990fb338f2f58b8f3e81a8310c681850c215ee174cc346d37590"
+    },
+    {
+      "path": "08_LAYOUT/typography.md",
+      "bytes": 718,
+      "sha256": "ab110ab5d8c5f0e97194b719f269ad0f23408f78b035daba9b2e529c8c889d8b"
+    },
+    {
+      "path": "08_LAYOUT/z_order.json",
+      "bytes": 315,
+      "sha256": "6e4c2421d0f8993208571a8ac0b7c6708df03aaa9a8fbea026b55c5653b35f69"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/ANIMATION_AND_VISUALIZER_SPEC.md",
+      "bytes": 1670,
+      "sha256": "b370586a74095396f1f7b5368e0c00411c775202f35845fade1e7da5714d144b"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/AnalysisDisplayModel.h",
+      "bytes": 1085,
+      "sha256": "132016c587f0fe20f8a0306af53887128fd95f129e52a8788c8ae5b328812ca9"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/AnimationClock.h",
+      "bytes": 629,
+      "sha256": "1cbf540aa1f131497418cbf251e9fe7b0af4ed80902f6828a09aa05cd9d200b6"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/BinaryData_Asset_Map.md",
+      "bytes": 775,
+      "sha256": "7ed4f14d502edfcdbc425a20715ee6326ba6ceff43b0bc733ca0aee6a722c72e"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/CLAUDE_MASTER_BUILD_PROMPT.md",
+      "bytes": 10111,
+      "sha256": "fe794c519fffd812292f04e74b85e9284d10915f5d4efca9c433b8976c2f8c2f"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/CMake_BinaryData_Snippet.txt",
+      "bytes": 968,
+      "sha256": "3addb9b8ac6c6a1f310cfa42d0807367cabef1580b3011011d50ff16730dd081"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/DSP_AND_ANALYSIS_ARCHITECTURE.md",
+      "bytes": 2458,
+      "sha256": "35dace6fbb81e6193eb552071dd914d13c6ac3768c75554e6b2d778b4aa51f3e"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/JUCE_IMPLEMENTATION_SPEC.md",
+      "bytes": 2234,
+      "sha256": "b25ef7263dedf6357c2a018ef2c4847f26f57536f0ad45d87c9920ae84105b49"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/KeyGloDesignTokens.h",
+      "bytes": 823,
+      "sha256": "93a8e0a96da2e840fbe4679316de8bf66900b86cb66289bc0950b24e1ef0e5e9"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/KeyGloFilmstripLookAndFeel.h",
+      "bytes": 989,
+      "sha256": "f7721aba3036e9dba37379f63048e75f05fbe85865771e7f6e9c0ca9476932f8"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/KeyGloLayout.h",
+      "bytes": 5269,
+      "sha256": "1bfc09c7bd07bc6b8de22eb0026eeffd3c0999f3c7a99ad27a943adaa9072a69"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/PROJECT_FILE_STRUCTURE.md",
+      "bytes": 1975,
+      "sha256": "1df5701e1a3e0a97645030364671bd03fdf743e57a26508682a4d51c1b54d87b"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/QA_ACCEPTANCE_CRITERIA.md",
+      "bytes": 1467,
+      "sha256": "a1ecea8b446e37c636175b87fcc0a43fca2f21bc554b0e5478a09e8915679d72"
+    },
+    {
+      "path": "09_JUCE_HANDOFF/UI_BUILD_ORDER.md",
+      "bytes": 741,
+      "sha256": "c90ed4c1e1ebd457cdfb51c6ec563c3c2a782d01a193cb80ef0bc7e5355997d1"
+    },
+    {
+      "path": "10_PREVIEWS/assets_contact_sheet.png",
+      "bytes": 514917,
+      "sha256": "65a889403fb2ac0fec5ed0d3762d5c7b52dd25300c53f285df9410841b35a242",
+      "width": 1800,
+      "height": 1500,
+      "mode": "RGBA"
+    },
+    {
+      "path": "10_PREVIEWS/macro_knob_cyan_filmstrip_contact.png",
+      "bytes": 50959,
+      "sha256": "311aa0d0b03cf17c1bd1b561d0e2b490956b659febbc3720aff368d466e8fea7",
+      "width": 1280,
+      "height": 160,
+      "mode": "RGBA"
+    },
+    {
+      "path": "10_PREVIEWS/macro_knob_gold_filmstrip_contact.png",
+      "bytes": 51423,
+      "sha256": "2efd5ff7c7a1823ddddd7145c8f3d22b59cb0274163de370f81a8d1dfc19559f",
+      "width": 1280,
+      "height": 160,
+      "mode": "RGBA"
+    },
+    {
+      "path": "10_PREVIEWS/small_knob_cyan_filmstrip_contact.png",
+      "bytes": 23290,
+      "sha256": "4c258aacbe1d616cd6e74ff684b7372bd48ab3105a598585dba1457e294be495",
+      "width": 768,
+      "height": 96,
+      "mode": "RGBA"
+    },
+    {
+      "path": "LICENSE_AND_USE.txt",
+      "bytes": 173,
+      "sha256": "1327cd0076ea9ccffd1dd0a1060ac2033b35aa8152be6ebb4151c9a512842f1d"
+    },
+    {
+      "path": "PACKAGE_VERSION.txt",
+      "bytes": 92,
+      "sha256": "3fa7fd76cabfdd401f25d00fe2ae1ce994aa83f4d81a080349464839bace9e1b"
+    },
+    {
+      "path": "README_START_HERE.md",
+      "bytes": 2279,
+      "sha256": "b7be06b032b89dc7473598eebeb5d860718d3938b730930557248eebd54ef509"
+    }
+  ]
+}

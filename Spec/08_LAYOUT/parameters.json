@@ -1,0 +1,114 @@
+{
+  "automatable": [
+    {
+      "id": "rangeSense",
+      "name": "Range Sense",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.72,
+      "skew": 1.0
+    },
+    {
+      "id": "keySense",
+      "name": "Key Sense",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.85,
+      "skew": 1.0
+    },
+    {
+      "id": "analysisSmooth",
+      "name": "Analysis Smooth",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.6,
+      "skew": 1.0
+    },
+    {
+      "id": "previewMix",
+      "name": "Preview Mix",
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0,
+      "default": 0.4,
+      "skew": 1.0
+    },
+    {
+      "id": "fineTuneCents",
+      "name": "Fine Tune",
+      "type": "float",
+      "min": -50.0,
+      "max": 50.0,
+      "default": 4.0,
+      "step": 0.1
+    },
+    {
+      "id": "outputGainDb",
+      "name": "Output",
+      "type": "float",
+      "min": -24.0,
+      "max": 12.0,
+      "default": -2.0,
+      "step": 0.1
+    },
+    {
+      "id": "transposeSemitones",
+      "name": "Transpose Preview",
+      "type": "choice",
+      "choices": [
+        "-4",
+        "-3",
+        "-2",
+        "-1",
+        "Original",
+        "+1",
+        "+2",
+        "+3",
+        "+4"
+      ],
+      "default": "-2"
+    },
+    {
+      "id": "previewRecommended",
+      "name": "A/B Recommended",
+      "type": "bool",
+      "default": true
+    },
+    {
+      "id": "sampleSolo",
+      "name": "Sample Solo",
+      "type": "bool",
+      "default": false
+    },
+    {
+      "id": "pluginBypass",
+      "name": "Bypass",
+      "type": "bool",
+      "default": false
+    }
+  ],
+  "commands_not_parameters": [
+    "Start Range Test",
+    "Save Profile",
+    "Analyze Dropped Beat",
+    "Copy Scale",
+    "Apply Tune",
+    "Load Audio File",
+    "Save Preset",
+    "Undo",
+    "Redo"
+  ],
+  "persistent_state": [
+    "selectedArtistProfile",
+    "lastDetectedKey",
+    "lastScale",
+    "lastBpm",
+    "preferredTuningMode",
+    "windowScale",
+    "reduceMotion",
+    "gpuVisualizers"
+  ]
+}

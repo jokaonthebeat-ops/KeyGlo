@@ -1,0 +1,57 @@
+{
+  "center": [
+    512,
+    512
+  ],
+  "radius": 350,
+  "notes": [
+    {
+      "name": "C",
+      "angleDegrees": -90
+    },
+    {
+      "name": "C#",
+      "angleDegrees": -60
+    },
+    {
+      "name": "D",
+      "angleDegrees": -30
+    },
+    {
+      "name": "D#",
+      "angleDegrees": 0
+    },
+    {
+      "name": "E",
+      "angleDegrees": 30
+    },
+    {
+      "name": "F",
+      "angleDegrees": 60
+    },
+    {
+      "name": "F#",
+      "angleDegrees": 90
+    },
+    {
+      "name": "G",
+      "angleDegrees": 120
+    },
+    {
+      "name": "G#",
+      "angleDegrees": 150
+    },
+    {
+      "name": "A",
+      "angleDegrees": 180
+    },
+    {
+      "name": "A#",
+      "angleDegrees": 210
+    },
+    {
+      "name": "B",
+      "angleDegrees": 240
+    }
+  ]
+}

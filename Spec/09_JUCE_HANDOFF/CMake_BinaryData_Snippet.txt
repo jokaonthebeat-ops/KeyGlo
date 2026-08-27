@@ -1,0 +1,16 @@
+juce_add_binary_data(KeyGloAssets
+    NAMESPACE KeyGloBinaryData
+    SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/01_BRAND/keyglo_header_logo_250x58.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/02_BASE/keyglo_shell_1491x1055.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/03_HUD/key_wheel_base_1024.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/03_HUD/score_pod_cyan_256.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/03_HUD/score_pod_violet_256.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/03_HUD/score_pod_gold_256.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/04_CONTROLS/knobs/macro_knob_cyan_160px_128frames_vertical.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/04_CONTROLS/knobs/macro_knob_gold_160px_128frames_vertical.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/06_VISUALIZERS/artist_range_grid_690x330.png
+        ${CMAKE_CURRENT_SOURCE_DIR}/Assets/06_VISUALIZERS/tuner_dial_gold_512.png
+)
+
+target_link_libraries(KeyGlo PRIVATE KeyGloAssets)

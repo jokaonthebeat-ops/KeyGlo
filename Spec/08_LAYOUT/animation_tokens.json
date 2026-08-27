@@ -1,0 +1,66 @@
+{
+  "targetFps": 60,
+  "lowPowerFps": 30,
+  "animations": {
+    "keyWheelOrbit": {
+      "idleDegreesPerSecond": 4.5,
+      "analyzingDegreesPerSecond": 32.0,
+      "easeMs": 350
+    },
+    "notePulse": {
+      "attackMs": 55,
+      "releaseMs": 260,
+      "scaleRange": [
+        1.0,
+        1.11
+      ],
+      "drivenBy": "12-bin chroma energy"
+    },
+    "scoreTween": {
+      "durationMs": 420,
+      "curve": "easeOutCubic"
+    },
+    "pitchTrail": {
+      "historySeconds": 12,
+      "updateHz": 45,
+      "glowRadiusPx": 7
+    },
+    "spectrum": {
+      "updateHz": 40,
+      "peakHoldMs": 320,
+      "fallDbPerSecond": 24
+    },
+    "tunerNeedle": {
+      "springHz": 8.5,
+      "damping": 0.72,
+      "inTuneToleranceCents": 5
+    },
+    "buttonHover": {
+      "durationMs": 120,
+      "glowOpacity": [
+        0.0,
+        0.7
+      ]
+    },
+    "clickRipple": {
+      "durationMs": 260,
+      "maxRadiusPx": 42
+    },
+    "panelParallax": {
+      "maxOffsetPx": 2.0,
+      "enabledByDefault": true
+    }
+  },
+  "accessibility": {
+    "reduceMotionDisables": [
+      "particles",
+      "parallax",
+      "continuousOrbit"
+    ],
+    "preserve": [
+      "meterUpdates",
+      "pitchReadout",
+      "tunerNeedle"
+    ]
+  }
+}

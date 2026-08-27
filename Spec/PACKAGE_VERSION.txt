@@ -1,0 +1,4 @@
+KeyGlo UI Assets and Claude Handoff
+Version: 1.0.0
+Base UI: 1491x1055
+Generated: 2026-08-26

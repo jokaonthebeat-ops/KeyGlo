@@ -1,0 +1,56 @@
+{
+  "beatAnalysis": {
+    "key": "F#",
+    "scale": "Minor",
+    "bpm": 148.0,
+    "tuningCents": -4.0,
+    "confidence": 0.92,
+    "alternatives": [
+      {
+        "key": "A",
+        "scale": "Major",
+        "confidence": 0.64
+      }
+    ]
+  },
+  "artist": {
+    "currentNote": "C#4",
+    "cents": 7.0,
+    "comfortableLowMidi": 48,
+    "comfortableHighMidi": 67,
+    "strongLowMidi": 55,
+    "strongHighMidi": 64,
+    "extendedLowMidi": 43,
+    "extendedHighMidi": 72,
+    "falsettoHighMidi": 81
+  },
+  "fit": {
+    "artistFit": 0.89,
+    "rangeFit": 0.85,
+    "hookMatch": 0.91,
+    "recommendedTranspose": -2,
+    "newKey": "E",
+    "newScale": "Minor",
+    "estimatedFit": 0.94
+  },
+  "sampleTune": {
+    "detectedNote": "G",
+    "recommendedSemitones": -1,
+    "fineTuneCents": 4.0,
+    "confidence": 0.86
+  },
+  "chroma12": [
+    0.22,
+    0.87,
+    0.69,
+    0.18,
+    0.73,
+    0.21,
+    1.0,
+    0.76,
+    0.7,
+    0.19,
+    0.17,
+    0.31
+  ]
+}

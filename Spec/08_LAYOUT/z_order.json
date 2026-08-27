@@ -1,0 +1,10 @@
+{
+  "0": "shell/background",
+  "1": "panel wells and static grids",
+  "2": "HUD ring bases and analyzer fills",
+  "3": "live traces, note nodes, score arcs, particles",
+  "4": "controls and hit targets",
+  "5": "labels, values, badges",
+  "6": "hover/focus/ripple effects",
+  "7": "optional debug bounds overlay"
+}

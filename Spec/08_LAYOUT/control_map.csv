@@ -1,0 +1,25 @@
+id,x,y,w,h,role,rendering,notes
+header,2,2,1487,83,component,asset/custom paint,Top navigation and utility bar
+logo,35,17,250,58,brand asset,PNG/SVG,Use supplied premium logo
+preset_browser,470,18,454,52,preset selector,asset/custom paint,"Prev, name, next"
+beat_panel,15,91,360,460,container,asset/custom paint,Beat analysis and drag/drop
+hero_panel,383,91,641,460,container,asset/custom paint,Central key wheel HUD
+key_wheel,435,103,525,438,animated custom component,asset/vector/custom paint,12-note chroma visualization
+key_confidence_pod,392,113,122,122,score pod,asset/custom paint,Cyan
+range_fit_pod,906,138,116,116,score pod,asset/custom paint,Violet
+hook_match_pod,887,430,120,120,score pod,asset/custom paint,Gold
+artist_panel,1033,91,443,460,container,asset/custom paint,Live range and pitch trail
+artist_range_graph,1136,207,292,276,animated graph,asset/custom paint,Scrolling pitch trail
+autotune_panel,15,559,313,270,container,asset/custom paint,Key/scale transfer helper
+transpose_panel,329,559,695,270,container,asset/custom paint,Semitone audition and fit result
+sample_panel,1033,559,443,270,container,asset/custom paint,808/sample pitch analysis
+sample_tuner,1297,579,134,134,animated tuner,asset/custom paint,Spring-smoothed cents dial
+macro_panel,15,835,1461,142,knob bank,filmstrip/custom paint,Six macros and stereo meter
+range_sense_knob,86,849,126,126,rotary slider,filmstrip,0-100 percent
+key_sense_knob,299,849,126,126,rotary slider,filmstrip,0-100 percent
+smooth_knob,512,849,126,126,rotary slider,filmstrip,0-100 percent
+preview_mix_knob,724,849,126,126,rotary slider,filmstrip,Dry/Wet
+fine_tune_knob,939,849,126,126,rotary slider,filmstrip gold,-50 to +50 cents
+output_knob,1150,849,126,126,rotary slider,filmstrip,-24 to +12 dB
+output_meter,1345,850,78,124,stereo meter,asset/custom paint,Segmented L/R
+footer,2,981,1487,72,status bar,asset/custom paint,Version/engine/status
