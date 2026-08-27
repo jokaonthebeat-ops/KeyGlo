@@ -12,9 +12,15 @@ KeyGloProcessor::KeyGloProcessor()
 {
     outputGainParam = apvts.getRawParameterValue (pid::outputGainDb);
     bypassParam     = apvts.getRawParameterValue (pid::pluginBypass);
+    previewMixParam = apvts.getRawParameterValue (pid::previewMix);
+    fineTuneParam   = apvts.getRawParameterValue (pid::fineTuneCents);
+    transposeParam  = apvts.getRawParameterValue (pid::transposeSemitones);
+    abParam         = apvts.getRawParameterValue (pid::previewRecommended);
+    soloParam       = apvts.getRawParameterValue (pid::sampleSolo);
 
     captureRing.prepare (48000.0, 2);   // real rate arrives in prepareToPlay
     coordinator = std::make_unique<AnalysisCoordinator> (captureRing, displayModel);
+    coordinator->setPreviewPlayer (&previewPlayer);
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout KeyGloProcessor::createLayout()
@@ -79,7 +85,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout KeyGloProcessor::createLayou
     return layout;
 }
 
-void KeyGloProcessor::prepareToPlay (double sampleRate, int)
+void KeyGloProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     sampleRateHz = sampleRate;
     outputGain.reset (sampleRate, 0.03);
@@ -89,6 +95,13 @@ void KeyGloProcessor::prepareToPlay (double sampleRate, int)
 
     if (std::abs (captureRing.sampleRate() - sampleRate) > 0.5)
         captureRing.prepare (sampleRate, getTotalNumInputChannels());
+
+    shifter.prepare (sampleRate, samplesPerBlock, getTotalNumOutputChannels());
+    setLatencySamples (shifter.latencySamples());
+    soloBlend.reset (sampleRate, 0.03);
+    soloBlend.setCurrentAndTargetValue (0.0f);
+    soloScratch.setSize (juce::jmax (2, getTotalNumOutputChannels()),
+                         juce::jmax (16, samplesPerBlock));
 }
 
 bool KeyGloProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -118,6 +131,64 @@ void KeyGloProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         if (auto position = playHead->getPosition())
             coordinator->setHostTempo (position->getBpm().orFallback (0.0),
                                        position->getIsPlaying());
+
+    // --- transpose preview (milestone 4) -----------------------------------
+    // The shifter always runs (its half-grain dry delay IS the reported
+    // latency, so it must never drop out of the chain); what varies is the
+    // wet amount: previewMix while B (recommended) is selected and a shift
+    // is dialled in, zero on A or bypass. All moves are smoothed inside.
+    {
+        const int semis = juce::jlimit (0, 8, juce::roundToInt (transposeParam->load())) - 4;
+        const float cents = fineTuneParam->load();
+        // Armed only once a real key result exists: parameters.json ships
+        // non-neutral defaults (B selected, -2 st, 40 % mix), and a fresh
+        // analyzer instance must never pitch-shift the program on its own.
+        const bool engaged = displayModel.previewArmed()
+                              && abParam->load() > 0.5f
+                              && (semis != 0 || std::abs (cents) > 0.5f)
+                              && ! bypassed;
+        const float ratio = std::pow (2.0f, ((float) semis + cents / 100.0f) / 12.0f);
+        shifter.process (buffer, ratio, engaged ? previewMixParam->load() : 0.0f);
+    }
+
+    // --- 808 solo audition --------------------------------------------------
+    // Cross-blends the program with the looping TUNED sample; the blend is
+    // smoothed so toggling Solo never clicks.
+    {
+        const bool soloOn = soloParam->load() > 0.5f && previewPlayer.hasSample()
+                             && ! bypassed;
+        soloBlend.setTargetValue (soloOn ? 1.0f : 0.0f);
+
+        if ((soloOn || soloBlend.getCurrentValue() > 0.001f)
+             && soloScratch.getNumSamples() >= numSamples
+             && soloScratch.getNumChannels() >= numChannels)
+        {
+            // A no-allocation view of the scratch at this block's length, so
+            // the player's loop position advances by exactly one block.
+            juce::AudioBuffer<float> view (soloScratch.getArrayOfWritePointers(),
+                                           numChannels, numSamples);
+            view.clear();
+            if (previewPlayer.render (view, sampleRateHz))
+            {
+                for (int i = 0; i < numSamples; ++i)
+                {
+                    const float blend = soloBlend.getNextValue();
+                    for (int ch = 0; ch < numChannels; ++ch)
+                        buffer.setSample (ch, i,
+                            buffer.getSample (ch, i) * (1.0f - blend)
+                              + soloScratch.getSample (ch, i) * blend);
+                }
+            }
+            else
+            {
+                soloBlend.skip (numSamples);
+            }
+        }
+        else
+        {
+            soloBlend.skip (numSamples);
+        }
+    }
 
     // Bypass still glides through the gain smoother to unity, so engaging or
     // releasing it cannot click (QA: "Bypass does not click").

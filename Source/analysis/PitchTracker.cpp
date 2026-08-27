@@ -17,15 +17,16 @@ void PitchTracker::decimate (const float* in, int numIn, int factor,
     }
 }
 
-PitchFrame PitchTracker::trackFrame (const float* x, int n, double rate)
+PitchFrame PitchTracker::trackFrame (const float* x, int n, double rate,
+                                     float minFreq, float maxFreq)
 {
     PitchFrame frame;
     if (x == nullptr || n < frameSize || rate <= 0.0)
         return frame;
 
     constexpr int w = frameSize / 2;                       // integration window
-    const int tauMin = juce::jmax (2, (int) (rate / maxHz));
-    const int tauMax = juce::jmin (frameSize - w - 1, (int) (rate / minHz));
+    const int tauMin = juce::jmax (2, (int) (rate / maxFreq));
+    const int tauMax = juce::jmin (frameSize - w - 1, (int) (rate / minFreq));
     if (tauMax <= tauMin + 2)
         return frame;
 
@@ -105,7 +106,7 @@ PitchFrame PitchTracker::trackFrame (const float* x, int n, double rate)
     }
 
     frame.hz = (float) (rate / tauRefined);
-    frame.voiced = dipDepth < 0.30f && frame.hz >= minHz && frame.hz <= maxHz;
+    frame.voiced = dipDepth < 0.30f && frame.hz >= minFreq && frame.hz <= maxFreq;
     if (frame.voiced)
     {
         frame.midi = 69.0f + 12.0f * std::log2 (frame.hz / 440.0f);

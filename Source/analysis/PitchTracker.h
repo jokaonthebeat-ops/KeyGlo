@@ -33,7 +33,10 @@ public:
     static constexpr float minHz = 60.0f, maxHz = 1000.0f;
 
     // One frame at the DECIMATED rate (n >= frameSize samples at decimatedRate).
-    static PitchFrame trackFrame (const float* x, int n, double decimatedRate);
+    // The frequency window is overridable: vocals default 60..1000 Hz, the
+    // 808/sample detector reaches down to ~25 Hz at an 8 kHz rate.
+    static PitchFrame trackFrame (const float* x, int n, double decimatedRate,
+                                  float minFreq = minHz, float maxFreq = maxHz);
 
     // Whole-buffer analysis at hopSeconds intervals; input at any rate,
     // decimation handled internally. Used for hook statistics and tests.

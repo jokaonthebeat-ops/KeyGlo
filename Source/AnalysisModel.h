@@ -76,6 +76,16 @@ struct AnalysisSnapshot
     float sampleFineTuneCents = 4.0f;
     float sampleConfidence = 0.86f;
 
+    bool hasSampleResult = false;      // a sample was dropped and analysed
+    bool sampleNoStableNote = false;   // nothing tonal in the sustain
+    bool samplePitchEnvelope = false;  // the note glides; start != sustain
+    juce::String sampleFileName;
+    juce::String sampleStartNote;      // with samplePitchEnvelope
+    float sampleDeviationCents = 0.0f; // the tuner needle
+    bool sampleTunedReady = false;     // Solo has a tuned buffer to play
+    juce::String appliedTunePath;      // last Apply Tune render, "" if none
+    std::array<float, 480> sampleWaveform {};   // 240 min/max pairs
+
     // --- live vectors -----------------------------------------------------
     std::array<float, 12> chroma { 0.22f, 0.87f, 0.69f, 0.18f, 0.73f, 0.21f,
                                    1.0f,  0.76f, 0.70f, 0.19f, 0.17f, 0.31f };
@@ -134,8 +144,17 @@ public:
 
     void publish (std::shared_ptr<const AnalysisSnapshot> next)
     {
+        // Plain atomic mirror of "there is a usable key" for the AUDIO
+        // thread: the preview shifter must stay disengaged until a real
+        // result exists (the pack's non-neutral parameter defaults would
+        // otherwise pitch-shift a fresh instance's program by default), and
+        // processBlock cannot touch the shared_ptr.
+        beatArmed.store (next->hasBeatResult && ! next->noReliableKey,
+                         std::memory_order_relaxed);
         std::atomic_store (&snapshot, std::move (next));
     }
+
+    bool previewArmed() const   { return beatArmed.load (std::memory_order_relaxed); }
 
     std::shared_ptr<const AnalysisSnapshot> get() const
     {
@@ -155,6 +174,7 @@ public:
 private:
     mutable std::shared_ptr<const AnalysisSnapshot> snapshot;
     mutable std::shared_ptr<const LiveVisuals> live;
+    std::atomic<bool> beatArmed { false };
 };
 
 // -----------------------------------------------------------------------------

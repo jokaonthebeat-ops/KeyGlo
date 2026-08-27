@@ -29,7 +29,12 @@ int main (int argc, char** argv)
 
     const juce::String outName = argc > 1 ? argv[1] : "KeyGlo-ui.png";
     const juce::String sizeArg = argc > 2 ? juce::String (argv[2]).toLowerCase() : "def";
-    const juce::String modeArg = argc > 3 ? juce::String (argv[3]).toLowerCase() : "";
+
+    // Modes combine: every argument from the third onward joins the mode
+    // string, so "signal vocal sample" runs all three feeds.
+    juce::String modeArg;
+    for (int i = 3; i < argc; ++i)
+        modeArg += juce::String (argv[i]).toLowerCase() + " ";
 
     int settleFrames = 90;
     for (int i = 3; i < argc; ++i)
@@ -94,14 +99,11 @@ int main (int argc, char** argv)
     // F#-minor-flavoured test feed at 148 BPM: an 808-ish bass line walking
     // i-VI-iv-VII with kick pulses and a filtered noise bed. Enough musical
     // truth for the real engine to detect key and tempo from the ring.
-    auto feedSignal = [&] (double seconds)
+    auto renderGroove = [] (double seconds) -> std::vector<float>
     {
-        juce::AudioBuffer<float> audio (2, 512);
-        juce::MidiBuffer midi;
         juce::Random random (0x4b47);
         double bassPhase = 0.0, chordPhase[3] = { 0.0, 0.0, 0.0 };
         float lp = 0.0f;
-        static int sampleIndex = 0;
 
         static const double bassHz[4] = { 46.25, 36.71, 61.74, 41.20 };  // F#1 D1 B1 E1
         static const double triads[4][3] = { { 185.0, 220.0, 277.18 },   // F#m
@@ -109,37 +111,46 @@ int main (int argc, char** argv)
                                              { 123.47, 146.83, 185.0 },  // Bm
                                              { 164.81, 207.65, 246.94 } };// E
 
-        const int blocks = (int) (48000.0 * seconds / 512.0);
-        for (int block = 0; block < blocks; ++block)
+        const int n = (int) (48000.0 * seconds);
+        std::vector<float> out ((size_t) n, 0.0f);
+        for (int i = 0; i < n; ++i)
+        {
+            const double t = (double) i / 48000.0;
+            const double beatLen = 60.0 / 148.0;
+            const int chord = ((int) (t / (beatLen * 4.0))) % 4;
+            const double beatPos = std::fmod (t, beatLen);
+            const float kick = (float) std::exp (-beatPos * 9.0);
+
+            bassPhase += 2.0 * juce::MathConstants<double>::pi
+                           * (bassHz[chord] + 7.0 * kick) / 48000.0;
+            float v = 0.48f * (0.45f + 0.55f * kick) * (float) std::sin (bassPhase);
+
+            for (int c = 0; c < 3; ++c)
+            {
+                chordPhase[c] += 2.0 * juce::MathConstants<double>::pi
+                                   * triads[chord][c] / 48000.0;
+                v += 0.16f * (float) std::sin (chordPhase[c])
+                   + 0.05f * (float) std::sin (2.0 * chordPhase[c]);
+            }
+
+            const float white = random.nextFloat() * 2.0f - 1.0f;
+            lp += 0.12f * (white - lp);
+            out[(size_t) i] = v + 0.035f * lp;
+        }
+        return out;
+    };
+
+    auto feedSignal = [&] (double seconds)
+    {
+        const auto groove = renderGroove (seconds);
+        juce::AudioBuffer<float> audio (2, 512);
+        juce::MidiBuffer midi;
+        for (int start = 0; start + 512 <= (int) groove.size(); start += 512)
         {
             for (int i = 0; i < 512; ++i)
             {
-                const double t = (double) sampleIndex / 48000.0;
-                const double beatLen = 60.0 / 148.0;
-                const int bar = (int) (t / (beatLen * 4.0));
-                const int chord = bar % 4;
-                const double beatPos = std::fmod (t, beatLen);
-                const float kick = (float) std::exp (-beatPos * 9.0);
-
-                bassPhase += 2.0 * juce::MathConstants<double>::pi
-                               * (bassHz[chord] + 7.0 * kick) / 48000.0;
-                float v = 0.48f * (0.45f + 0.55f * kick) * (float) std::sin (bassPhase);
-
-                for (int n = 0; n < 3; ++n)
-                {
-                    chordPhase[n] += 2.0 * juce::MathConstants<double>::pi
-                                       * triads[chord][n] / 48000.0;
-                    v += 0.16f * (float) std::sin (chordPhase[n])
-                       + 0.05f * (float) std::sin (2.0 * chordPhase[n]);
-                }
-
-                const float white = random.nextFloat() * 2.0f - 1.0f;
-                lp += 0.12f * (white - lp);
-                v += 0.035f * lp;
-
-                audio.setSample (0, i, v);
-                audio.setSample (1, i, v * 0.96f);
-                ++sampleIndex;
+                audio.setSample (0, i, groove[(size_t) (start + i)]);
+                audio.setSample (1, i, groove[(size_t) (start + i)] * 0.96f);
             }
             processor.processBlock (audio, midi);
         }
@@ -151,7 +162,9 @@ int main (int argc, char** argv)
     {
         juce::AudioBuffer<float> audio (2, 512);
         juce::MidiBuffer midi;
-        const int melody[] = { 61, 63, 64, 66, 64, 63, 61, 59, 61, 64 };
+        // Strictly F# natural minor around C#4, so the sung material agrees
+        // with the beat context in combined shots.
+        const int melody[] = { 61, 62, 64, 66, 64, 62, 61, 59, 61, 64 };
         double phase[6] = { 0, 0, 0, 0, 0, 0 };
         const double amps[6] = { 1.0, 0.55, 0.32, 0.18, 0.10, 0.06 };
 
@@ -192,6 +205,115 @@ int main (int argc, char** argv)
         }
     };
 
+
+    if (modeArg.contains ("signal"))
+    {
+        // In demo mode the feed only lights the meters/spectrum - the demo
+        // snapshot stays authoritative, so the real engine's verdict on the
+        // test loop must not replace it.
+        //
+        // Combined with the vocal feed, the beat goes in as a FILE: only
+        // file results are protected from the auto ring re-analysis, and
+        // without that the singing that follows would replace the beat's
+        // key with the singer's (that is by design for live sessions).
+        const bool beatAsFile = ! demoDisplayMode() && modeArg.contains ("vocal");
+
+        if (beatAsFile)
+        {
+            auto beatFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                              .getChildFile ("keyglo-shot-beat.wav");
+            beatFile.deleteFile();
+            {
+                // Writer scoped: the WAV header finalises in its destructor.
+                juce::WavAudioFormat wav;
+                auto stream = beatFile.createOutputStream();
+                std::unique_ptr<juce::AudioFormatWriter> writer (
+                    wav.createWriterFor (stream.get(), 48000.0, 1, 24, {}, 0));
+                if (writer != nullptr)
+                {
+                    stream.release();
+                    const auto groove = renderGroove (8.5);
+                    juce::AudioBuffer<float> b (1, (int) groove.size());
+                    for (int i = 0; i < (int) groove.size(); ++i)
+                        b.setSample (0, i, groove[(size_t) i]);
+                    writer->writeFromAudioSampleBuffer (b, 0, b.getNumSamples());
+                }
+            }
+            processor.analyseFileAsync (beatFile);
+            for (int tries = 0; tries < 300; ++tries)
+            {
+                auto snap = processor.getDisplayModel().get();
+                if (snap->hasBeatResult && ! snap->analyzing)
+                    break;
+                juce::Thread::sleep (50);
+            }
+            beatFile.deleteFile();
+            feedSignal (1.0);   // meters + spectrum still want live audio
+        }
+        else
+        {
+            feedSignal (demoDisplayMode() ? 1.0 : 8.5);
+            if (! demoDisplayMode())
+            {
+                processor.analyseCaptureNow();
+                for (int tries = 0; tries < 300; ++tries)
+                {
+                    auto snap = processor.getDisplayModel().get();
+                    if (snap->hasBeatResult && ! snap->analyzing)
+                        break;
+                    juce::Thread::sleep (50);
+                }
+            }
+        }
+    }
+
+    // "sample" mode: drop a G2 808 (4 cents sharp) on the panel - runs
+    // AFTER the beat block so the recommendation is scale-aware
+    // (G2 vs F# minor -> -1 st, the approved reference's own scenario).
+    if (modeArg.contains ("sample"))
+    {
+        auto sampleFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                            .getChildFile ("keyglo-shot-808.wav");
+        sampleFile.deleteFile();
+        {
+            juce::WavAudioFormat wav;
+            auto stream = sampleFile.createOutputStream();
+            std::unique_ptr<juce::AudioFormatWriter> writer (
+                wav.createWriterFor (stream.get(), 48000.0, 1, 24, {}, 0));
+            if (writer != nullptr)
+            {
+                stream.release();
+                const double f0 = 440.0 * std::pow (2.0, (43.0 - 69.0 + 0.04) / 12.0);
+                const int n = (int) (48000.0 * 1.2);
+                juce::AudioBuffer<float> b (1, n);
+                double phase = 0.0;
+                for (int i = 0; i < n; ++i)
+                {
+                    const double t = i / 48000.0;
+                    phase += juce::MathConstants<double>::twoPi
+                               * (f0 + 18.0 * std::exp (-t / 0.012)) / 48000.0;
+                    const float env = (float) ((1.0 - std::exp (-t / 0.004))
+                                                 * std::exp (-t / 0.42));
+                    b.setSample (0, i, 0.7f * env * (float) (std::sin (phase)
+                                    + 0.25 * std::sin (2.0 * phase)));
+                }
+                writer->writeFromAudioSampleBuffer (b, 0, n);
+            }
+        }
+        processor.analyseSampleAsync (sampleFile);
+        for (int tries = 0; tries < 200; ++tries)
+        {
+            juce::Thread::sleep (25);
+            if (processor.getDisplayModel().get()->hasSampleResult)
+                break;
+        }
+        sampleFile.deleteFile();
+    }
+
+    // Vocal LAST, over the standing beat result, like the real workflow -
+    // the trail has to show the singing, not get scrolled out by the beat
+    // feed. The auto ring re-analysis may run on the vocal; the melody is
+    // strictly in F# minor so the key it hears agrees with the beat's.
     if (modeArg.contains ("vocal"))
     {
         feedVoice();
@@ -200,25 +322,6 @@ int main (int argc, char** argv)
             juce::Thread::sleep (25);
             if (processor.getDisplayModel().get()->hasFitResult)
                 break;
-        }
-    }
-
-    if (modeArg.contains ("signal"))
-    {
-        // In demo mode the feed only lights the meters/spectrum - the demo
-        // snapshot stays authoritative, so the real engine's verdict on the
-        // test loop must not replace it.
-        feedSignal (demoDisplayMode() ? 1.0 : 8.5);
-        if (! demoDisplayMode())
-        {
-            processor.analyseCaptureNow();
-            for (int tries = 0; tries < 300; ++tries)
-            {
-                auto snap = processor.getDisplayModel().get();
-                if (snap->hasBeatResult && ! snap->analyzing)
-                    break;
-                juce::Thread::sleep (50);
-            }
         }
     }
 

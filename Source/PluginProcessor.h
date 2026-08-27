@@ -16,6 +16,8 @@
 #include "AnalysisModel.h"
 #include "analysis/CaptureRing.h"
 #include "analysis/AnalysisCoordinator.h"
+#include "dsp/PreviewPitchShifter.h"
+#include "dsp/SamplePreviewPlayer.h"
 
 namespace keyglo
 {
@@ -75,6 +77,10 @@ public:
     void analyseCaptureNow()                               { coordinator->analyseRingNow(); }
     bool isAnalysisBusy() const                            { return coordinator->isBusy(); }
 
+    // 808 / sample engine (milestone 4).
+    void analyseSampleAsync (const juce::File& f)          { coordinator->analyseSampleAsync (f); }
+    void applyTuneAsync()                                  { coordinator->applyTuneAsync(); }
+
     // Vocal engine (milestone 3).
     void startRangeTest()                                  { coordinator->startRangeTest(); }
     void advanceRangeTest()                                { coordinator->advanceRangeTest(); }
@@ -110,6 +116,16 @@ private:
     juce::SmoothedValue<float> outputGain { 1.0f };
     std::atomic<float>* outputGainParam = nullptr;
     std::atomic<float>* bypassParam = nullptr;
+    std::atomic<float>* previewMixParam = nullptr;
+    std::atomic<float>* fineTuneParam = nullptr;
+    std::atomic<float>* transposeParam = nullptr;
+    std::atomic<float>* abParam = nullptr;
+    std::atomic<float>* soloParam = nullptr;
+
+    PreviewPitchShifter shifter;
+    SamplePreviewPlayer previewPlayer;
+    juce::SmoothedValue<float> soloBlend { 0.0f };   // 0 = program, 1 = sample
+    juce::AudioBuffer<float> soloScratch;            // preallocated in prepare
 
     std::atomic<float> peakDb[2] { -120.0f, -120.0f };
     float peakHold[2] { 0.0f, 0.0f };

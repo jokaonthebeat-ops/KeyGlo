@@ -17,7 +17,9 @@
 #include "analysis/PitchTracker.h"
 #include "analysis/VocalRangeProfiler.h"
 #include "analysis/HookFitScorer.h"
+#include "analysis/SamplePitchDetector.h"
 #include "state/ArtistProfileStore.h"
+#include "dsp/PreviewPitchShifter.h"
 #include <cstdio>
 
 using namespace keyglo;
@@ -366,6 +368,16 @@ int main()
         for (int i = 0; i < n; ++i)
             out[(size_t) i] += (float) (0.30 * std::sin (juce::MathConstants<double>::twoPi
                                                            * bassHz * ratio * i / sr));
+
+        // Normalise to 0.7 peak: chords + drone can sum past full scale, and
+        // a fixture that clips when written to a 16-bit WAV grows harmonics
+        // that wreck the very in-scale gate it exists to exercise.
+        float peak = 0.0f;
+        for (auto v : out)
+            peak = juce::jmax (peak, std::abs (v));
+        if (peak > 1.0e-6f)
+            for (auto& v : out)
+                v *= 0.7f / peak;
         return out;
     };
 
@@ -527,6 +539,13 @@ int main()
         std::vector<float> silence ((size_t) (44100 * 8), 0.0f);
         const auto t = TempoDetector::analyse (silence.data(), (int) silence.size(), 44100.0);
         check (! t.reliable, "silence: no tempo claimed");
+    }
+
+    // --- a fresh instance never pitch-shifts on its own ----------------------
+    {
+        KeyGloProcessor p;
+        check (! p.getDisplayModel().previewArmed(),
+               "fresh instance: preview shifter is disarmed");
     }
 
     // --- capture ring -------------------------------------------------------
@@ -1084,6 +1103,362 @@ int main()
                "singing over an analysed beat does not replace its key (still "
                  + after->key + " from " + after->sourceName + ")");
         file.deleteFile();
+    }
+
+    // =======================================================================
+    //  Milestone 4 - 808/sample tuning and the preview shifter
+    // =======================================================================
+
+    // An 808: pitch-drop attack into a stable sustain, exponential decay.
+    auto render808 = [] (float sustainMidi, double seconds, double sr,
+                         float detuneCents = 0.0f, float glideSemis = 0.0f) -> std::vector<float>
+    {
+        const int n = (int) (sr * seconds);
+        std::vector<float> out ((size_t) n, 0.0f);
+        const double f0 = 440.0 * std::pow (2.0, (sustainMidi - 69.0 + detuneCents / 100.0f) / 12.0);
+        double phase = 0.0;
+        for (int i = 0; i < n; ++i)
+        {
+            const double t = i / sr;
+            // Attack pitch drop over 25 ms, plus an optional slow glide that
+            // makes the whole sample a pitch envelope.
+            const double attackSweep = 18.0 * std::exp (-t / 0.012);
+            const double glide = std::pow (2.0, (glideSemis * juce::jmin (1.0, t / (seconds * 0.8))) / 12.0);
+            phase += juce::MathConstants<double>::twoPi * (f0 * glide + attackSweep) / sr;
+            const float env = (float) ((1.0 - std::exp (-t / 0.004)) * std::exp (-t / (seconds * 0.35)));
+            out[(size_t) i] = 0.7f * env * (float) (std::sin (phase)
+                                + 0.25 * std::sin (2.0 * phase));
+        }
+        return out;
+    };
+
+    std::array<bool, 12> noScale {};
+
+    // --- sample pitch detection ---------------------------------------------
+    {
+        // F#1 808 at concert pitch: detected within 10 cents, no envelope.
+        const auto kick = render808 (30.0f, 1.2, 48000.0);   // F#1 = MIDI 30
+        const auto r = SamplePitchDetector::analyse (kick.data(), (int) kick.size(),
+                                                     48000.0, noScale, false);
+        check (r.valid, "F#1 808: stable note found");
+        checkNear (r.detectedMidi, 30.0, 0.12, "F#1 808: pitch");
+        check (! r.pitchEnvelope, "F#1 808: no envelope flagged");
+        check (std::abs (r.deviationCents) < 10.0f, "F#1 808: near-zero deviation ("
+                 + juce::String (r.deviationCents, 1) + " cents)");
+    }
+
+    {
+        // +30 cents sharp G2: needle reads the deviation, the correction
+        // brings it to the nearest semitone.
+        const auto kick = render808 (43.0f, 1.2, 48000.0, 30.0f);
+        const auto r = SamplePitchDetector::analyse (kick.data(), (int) kick.size(),
+                                                     48000.0, noScale, false);
+        check (r.valid, "sharp G2: analysed");
+        checkNear (r.deviationCents, 30.0, 9.0, "sharp G2: deviation measured");
+        checkNear (r.totalShiftSemitones, -0.30, 0.09, "sharp G2: correction is -30 cents");
+        check (r.recommendedSemitones == 0, "sharp G2: no semitone jump needed");
+    }
+
+    {
+        // G2 sample against an F# minor beat: nearest scale tone is F#2,
+        // one semitone down - the mockup's own scenario.
+        std::array<bool, 12> fsharpMinorScale { false, true, true, false, true, false,
+                                                true,  false, true, true,  false, true };
+        const auto kick = render808 (43.0f, 1.2, 48000.0);   // G2
+        const auto r = SamplePitchDetector::analyse (kick.data(), (int) kick.size(),
+                                                     48000.0, fsharpMinorScale, true);
+        check (r.valid && r.recommendedSemitones == -1,
+               "G2 vs F# minor: recommends -1 semitone (got "
+                 + juce::String (r.recommendedSemitones) + ")");
+    }
+
+    {
+        // A sample that glides an octave is a pitch envelope, not one note.
+        const auto glide = render808 (36.0f, 1.2, 48000.0, 0.0f, 7.0f);
+        const auto r = SamplePitchDetector::analyse (glide.data(), (int) glide.size(),
+                                                     48000.0, noScale, false);
+        check (! r.valid || r.pitchEnvelope,
+               "gliding sample: flagged as a pitch envelope");
+    }
+
+    {
+        // A noise burst has no stable note - honesty gate.
+        juce::Random rng (0x808);
+        std::vector<float> burst ((size_t) (48000.0 * 0.8), 0.0f);
+        for (size_t i = 0; i < burst.size(); ++i)
+            burst[i] = 0.6f * (rng.nextFloat() * 2.0f - 1.0f)
+                        * std::exp (-(float) i / 9600.0f);
+        const auto r = SamplePitchDetector::analyse (burst.data(), (int) burst.size(),
+                                                     48000.0, noScale, false);
+        check (! r.valid, "noise burst: no stable note claimed");
+    }
+
+    // --- preview pitch shifter ----------------------------------------------
+    {
+        PreviewPitchShifter shifter;
+        shifter.prepare (48000.0, 512, 2);
+        check (shifter.latencySamples() > 0, "shifter reports its dry-path latency");
+
+        // Latency truth: an impulse through the DISENGAGED path (wet 0) must
+        // arrive exactly at the reported latency.
+        juce::AudioBuffer<float> impulse (2, 4096);
+        impulse.clear();
+        impulse.setSample (0, 0, 1.0f);
+        impulse.setSample (1, 0, 1.0f);
+        shifter.process (impulse, 1.0f, 0.0f);
+        int arrival = -1;
+        for (int i = 0; i < 4096; ++i)
+            if (std::abs (impulse.getSample (0, i)) > 0.5f)
+            {
+                arrival = i;
+                break;
+            }
+        check (arrival == shifter.latencySamples(),
+               "impulse arrives at the reported latency (got " + juce::String (arrival)
+                 + ", reported " + juce::String (shifter.latencySamples()) + ")");
+    }
+
+    {
+        // +12 semitones on a 220 Hz sine must come out dominated by 440 Hz,
+        // at comparable loudness. Measured with a coarse DFT probe.
+        PreviewPitchShifter shifter;
+        shifter.prepare (48000.0, 512, 1);
+
+        const int n = 48000;
+        juce::AudioBuffer<float> audio (1, n);
+        for (int i = 0; i < n; ++i)
+            audio.setSample (0, i, 0.5f * (float) std::sin (juce::MathConstants<double>::twoPi
+                                                              * 220.0 * i / 48000.0));
+        const float inRms = audio.getRMSLevel (0, 0, n);
+
+        for (int start = 0; start < n; start += 512)
+        {
+            juce::AudioBuffer<float> view (audio.getArrayOfWritePointers(), 1, start,
+                                           juce::jmin (512, n - start));
+            shifter.process (view, 2.0f, 1.0f);
+        }
+
+        auto probe = [&audio, n] (double hz)
+        {
+            double re = 0.0, im = 0.0;
+            for (int i = n / 2; i < n; ++i)   // steady-state half
+            {
+                const double w = juce::MathConstants<double>::twoPi * hz * i / 48000.0;
+                re += audio.getSample (0, i) * std::cos (w);
+                im += audio.getSample (0, i) * std::sin (w);
+            }
+            return std::sqrt (re * re + im * im);
+        };
+
+        const double at440 = probe (440.0), at220 = probe (220.0);
+        check (at440 > at220 * 3.0,
+               "+12 st shifts 220 Hz to 440 Hz (440:220 energy "
+                 + juce::String (at440 / juce::jmax (1.0, at220), 1) + ":1)");
+
+        const float outRms = audio.getRMSLevel (0, n / 2, n / 2);
+        check (std::abs (juce::Decibels::gainToDecibels (outRms / inRms)) < 2.5f,
+               "shifter is loudness-neutral within 2.5 dB (delta "
+                 + juce::String (juce::Decibels::gainToDecibels (outRms / inRms), 2) + " dB)");
+    }
+
+    {
+        // Engaging the preview mid-stream must not click.
+        PreviewPitchShifter shifter;
+        shifter.prepare (48000.0, 512, 1);
+        juce::AudioBuffer<float> audio (1, 512);
+        float previous = 0.0f, maxStep = 0.0f;
+        double phase = 0.0;
+
+        for (int block = 0; block < 60; ++block)
+        {
+            for (int i = 0; i < 512; ++i)
+            {
+                phase += juce::MathConstants<double>::twoPi * 180.0 / 48000.0;
+                audio.setSample (0, i, 0.4f * (float) std::sin (phase));
+            }
+            const float wet = block >= 30 ? 1.0f : 0.0f;   // hard toggle
+            shifter.process (audio, 0.891f, wet);          // -2 st
+
+            for (int i = 0; i < 512; ++i)
+            {
+                const float v = audio.getSample (0, i);
+                if (block > 0 || i > 0)
+                    maxStep = juce::jmax (maxStep, std::abs (v - previous));
+                previous = v;
+            }
+        }
+        check (maxStep < 0.12f,
+               "engaging the preview is click-free (max step "
+                 + juce::String (maxStep, 3) + ")");
+    }
+
+    // --- the money test: Apply Tune output is actually in tune --------------
+    {
+        // A G2 sample 30 cents sharp, dropped and tuned against F# minor:
+        // the rendered file must analyse as F#2 within a few cents.
+        const auto kick = render808 (43.0f, 1.2, 48000.0, 30.0f);
+        auto sampleFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                            .getChildFile ("keyglo-test-808.wav");
+        sampleFile.deleteFile();
+        {
+            juce::WavAudioFormat wav;
+            auto stream = sampleFile.createOutputStream();
+            std::unique_ptr<juce::AudioFormatWriter> writer (
+                wav.createWriterFor (stream.get(), 48000.0, 1, 24, {}, 0));
+            check (writer != nullptr, "808 test wav written");
+            if (writer != nullptr)
+            {
+                stream.release();
+                juce::AudioBuffer<float> b (1, (int) kick.size());
+                for (int i = 0; i < (int) kick.size(); ++i)
+                    b.setSample (0, i, kick[(size_t) i]);
+                writer->writeFromAudioSampleBuffer (b, 0, b.getNumSamples());
+            }
+        }
+
+        KeyGloProcessor p;
+        p.setPlayConfigDetails (2, 2, 48000.0, 512);
+        p.prepareToPlay (48000.0, 512);
+
+        // Give it the F# minor beat context first (via the beat file path).
+        {
+            const auto beat = renderLoop (fsharpMinor, 46.25f, 9.0, 44100.0, 0.0);
+
+            auto beatFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                              .getChildFile ("keyglo-test-beat-m4.wav");
+            beatFile.deleteFile();
+            {
+                // The writer MUST be destroyed before the worker reads the
+                // file: WAV headers are finalised in the destructor, and an
+                // unflushed file reads as ~empty. This exact bug shipped in
+                // the first version of this test.
+                juce::WavAudioFormat wav;
+                auto stream = beatFile.createOutputStream();
+                std::unique_ptr<juce::AudioFormatWriter> writer (
+                    wav.createWriterFor (stream.get(), 44100.0, 1, 16, {}, 0));
+                if (writer != nullptr)
+                {
+                    stream.release();
+                    juce::AudioBuffer<float> b (1, (int) beat.size());
+                    for (int i = 0; i < (int) beat.size(); ++i)
+                        b.setSample (0, i, beat[(size_t) i]);
+                    writer->writeFromAudioSampleBuffer (b, 0, b.getNumSamples());
+                }
+            }
+            p.analyseFileAsync (beatFile);
+            for (int tries = 0; tries < 300; ++tries)
+            {
+                juce::Thread::sleep (50);
+                auto s = p.getDisplayModel().get();
+                if (s->hasBeatResult && ! s->analyzing)
+                    break;
+            }
+            beatFile.deleteFile();
+        }
+        {
+            // NOT just key=="F#": the default snapshot's key is also "F#",
+            // so that alone passes with the analysis silently failed.
+            auto s = p.getDisplayModel().get();
+            check (s->hasBeatResult && ! s->noReliableKey
+                     && s->key == "F#" && s->scale == "Minor",
+                   "beat context is a RELIABLE F# minor (got "
+                     + juce::String (s->hasBeatResult ? (s->noReliableKey ? "unreliable" : "ok")
+                                                      : "none")
+                     + ", " + s->key + " " + s->scale + ")");
+            check (p.getDisplayModel().previewArmed(),
+                   "preview shifter arms once the beat result stands");
+        }
+
+        p.analyseSampleAsync (sampleFile);
+        for (int tries = 0; tries < 300; ++tries)
+        {
+            juce::Thread::sleep (50);
+            if (p.getDisplayModel().get()->hasSampleResult)
+                break;
+        }
+        auto snap = p.getDisplayModel().get();
+        check (snap->hasSampleResult && ! snap->sampleNoStableNote,
+               "dropped 808 analysed");
+        check (snap->sampleNote == "G2", "dropped 808 detected as G2 (got "
+                 + snap->sampleNote + ")");
+        // The sample is G2 +30 cents: the nearest F#-minor tone is G#2 at
+        // +0.70 st, closer than F#2 at -1.30 (the in-tune-G2 -> F#2 case is
+        // covered by the direct detector test above).
+        check (snap->sampleRecommendedSemitones == 1,
+               "sharp G2 recommends +1 st toward G# (got "
+                 + juce::String (snap->sampleRecommendedSemitones) + ")");
+        checkNear (snap->sampleFineTuneCents, -30.0, 9.0,
+                   "sharp G2 fine remainder is -30 cents");
+        check (snap->sampleTunedReady, "tuned audition buffer is ready for SOLO");
+
+        // Apply Tune, then re-analyse the rendered file with no key context:
+        // it must land on F#2 within a few cents.
+        p.applyTuneAsync();
+        juce::String renderedPath;
+        for (int tries = 0; tries < 300; ++tries)
+        {
+            juce::Thread::sleep (50);
+            renderedPath = p.getDisplayModel().get()->appliedTunePath;
+            if (renderedPath.isNotEmpty())
+                break;
+        }
+        check (renderedPath.isNotEmpty(), "Apply Tune rendered a file");
+
+        if (renderedPath.isNotEmpty())
+        {
+            juce::File rendered (renderedPath);
+            check (rendered.existsAsFile(), "rendered file exists on disk");
+
+            juce::AudioFormatManager fm;
+            fm.registerBasicFormats();
+            std::unique_ptr<juce::AudioFormatReader> reader (fm.createReaderFor (rendered));
+            check (reader != nullptr, "rendered file is readable");
+            if (reader != nullptr)
+            {
+                std::vector<float> tuned ((size_t) reader->lengthInSamples, 0.0f);
+                juce::AudioBuffer<float> b (1, (int) reader->lengthInSamples);
+                reader->read (&b, 0, (int) reader->lengthInSamples, 0, true, false);
+                for (int i = 0; i < b.getNumSamples(); ++i)
+                    tuned[(size_t) i] = b.getSample (0, i);
+
+                const auto verify = SamplePitchDetector::analyse (tuned.data(),
+                                                                  (int) tuned.size(),
+                                                                  reader->sampleRate,
+                                                                  noScale, false);
+                check (verify.valid, "rendered file has a stable note");
+                checkNear (verify.detectedMidi, 44.0, 0.08,
+                           "rendered file IS G#2 in tune");   // G2+30c shifted +0.70 st
+            }
+            rendered.deleteFile();
+        }
+        sampleFile.deleteFile();
+
+        // SOLO actually plays the tuned sample through the output.
+        {
+            setParam (p, pid::sampleSolo, 1.0f);
+            juce::AudioBuffer<float> block (2, 512);
+            juce::MidiBuffer midi;
+            float peak = 0.0f;
+            for (int i = 0; i < 40; ++i)
+            {
+                block.clear();                        // silent input
+                p.processBlock (block, midi);
+                peak = juce::jmax (peak, block.getMagnitude (0, 0, 512));
+            }
+            check (peak > 0.05f, "SOLO plays the tuned sample over silence (peak "
+                     + juce::String (peak, 3) + ")");
+
+            setParam (p, pid::sampleSolo, 0.0f);
+            for (int i = 0; i < 20; ++i)
+            {
+                block.clear();
+                p.processBlock (block, midi);
+            }
+            block.clear();
+            p.processBlock (block, midi);
+            check (block.getMagnitude (0, 0, 512) < 0.01f,
+                   "SOLO off returns to the program path");
+        }
     }
 
     std::printf ("%d checks, %d failed\n", checksRun, checksFailed);

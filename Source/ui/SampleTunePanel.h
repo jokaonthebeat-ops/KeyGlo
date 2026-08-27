@@ -126,7 +126,8 @@ private:
 // -----------------------------------------------------------------------------
 //  SampleTunePanel
 // -----------------------------------------------------------------------------
-class SampleTunePanel : public juce::Component
+class SampleTunePanel : public juce::Component,
+                        public juce::FileDragAndDropTarget
 {
 public:
     SampleTunePanel (KeyGloProcessor& p, DemoFeed& feed)
@@ -139,6 +140,7 @@ public:
         applyButton.setLabelColour (tokens::gold);
         applyButton.setIconTint (tokens::gold);
         applyButton.setAccent (tokens::gold);
+        applyButton.onClick = [this] { processor.applyTuneAsync(); };
         addAndMakeVisible (applyButton);
 
         soloButton.setLabel ("SOLO");
@@ -155,9 +157,46 @@ public:
     void update (double dt)
     {
         auto snap = processor.getDisplayModel().get();
-        tuner.setNote (snap->sampleNote);
-        tuner.setCents (demo.tunerCents);
+        const bool haveSample = snap->hasSampleResult && ! snap->sampleNoStableNote;
+
+        if (demoDisplayMode())
+        {
+            tuner.setNote (snap->sampleNote);
+            tuner.setCents (demo.tunerCents);
+        }
+        else if (haveSample)
+        {
+            tuner.setNote (snap->sampleNote);
+            tuner.setCents (snap->sampleDeviationCents);
+        }
+        else
+        {
+            tuner.setNote ("--");
+            tuner.setCents (0.0f);
+        }
         tuner.update (dt);
+
+        applyButton.setEnabled (demoDisplayMode() || haveSample);
+        soloButton.setEnabled (demoDisplayMode() || snap->sampleTunedReady);
+        repaint();
+    }
+
+    // --- sample drop target -------------------------------------------------
+    bool isInterestedInFileDrag (const juce::StringArray& files) override
+    {
+        for (const auto& f : files)
+            if (f.endsWithIgnoreCase (".wav") || f.endsWithIgnoreCase (".aif")
+                 || f.endsWithIgnoreCase (".aiff") || f.endsWithIgnoreCase (".flac")
+                 || f.endsWithIgnoreCase (".mp3"))
+                return true;
+        return false;
+    }
+    void fileDragEnter (const juce::StringArray&, int, int) override { dropHighlight = true; repaint(); }
+    void fileDragExit (const juce::StringArray&) override            { dropHighlight = false; repaint(); }
+    void filesDropped (const juce::StringArray& files, int, int) override
+    {
+        dropHighlight = false;
+        processor.analyseSampleAsync (juce::File (files[0]));
         repaint();
     }
 
@@ -184,6 +223,7 @@ public:
 private:
     void drawWaveform (juce::Graphics& g, juce::Rectangle<int> r)
     {
+        auto snap = processor.getDisplayModel().get();
         auto grid = Assets::waveformGrid();
         if (grid.isValid())
         {
@@ -196,28 +236,78 @@ private:
             g.fillRoundedRectangle (r.toFloat(), 6.0f);
         }
 
-        // 808-shaped decay envelope, gold, subtly shimmering.
-        const auto plot = r.reduced (6, 4).withTrimmedBottom (14);
-        const float midY = (float) plot.getCentreY();
-        juce::Path wave;
-        wave.startNewSubPath ((float) plot.getX(), midY);
-
-        for (int i = 0; i <= 200; ++i)
+        if (dropHighlight)
         {
-            const float t = (float) i / 200.0f;
-            const float x = (float) plot.getX() + t * (float) plot.getWidth();
-            const float env = std::exp (-t * 4.2f);
-            const float cycle = std::sin (t * 95.0f + (float) demoPhase * 0.35f)
-                              + 0.35f * std::sin (t * 190.0f);
-            const float y = midY - cycle * env * (float) plot.getHeight() * 0.42f;
-            wave.lineTo (x, y);
+            g.setColour (tokens::gold.withAlpha (0.7f));
+            g.drawRoundedRectangle (r.toFloat().reduced (1.0f), 6.0f, 1.6f);
         }
 
-        g.setColour (tokens::gold.withAlpha (0.9f));
-        g.strokePath (wave, juce::PathStrokeType (1.4f));
-        g.setColour (tokens::gold.withAlpha (0.25f));
-        g.strokePath (wave, juce::PathStrokeType (3.6f));
-        demoPhase += 0.15;
+        const auto plot = r.reduced (6, 4).withTrimmedBottom (14);
+        const float midY = (float) plot.getCentreY();
+
+        if (! demoDisplayMode() && snap->hasSampleResult)
+        {
+            // Real min/max envelope of the dropped sample.
+            const int bins = 240;
+            const float bw = (float) plot.getWidth() / (float) bins;
+            g.setColour (tokens::gold.withAlpha (0.85f));
+            for (int b = 0; b < bins; ++b)
+            {
+                const float lo = snap->sampleWaveform[(size_t) (b * 2)];
+                const float hi = snap->sampleWaveform[(size_t) (b * 2 + 1)];
+                const float yTop = midY - hi * (float) plot.getHeight() * 0.48f;
+                const float yBot = midY - lo * (float) plot.getHeight() * 0.48f;
+                g.fillRect ((float) plot.getX() + bw * (float) b, yTop,
+                            juce::jmax (1.0f, bw - 0.4f), juce::jmax (1.0f, yBot - yTop));
+            }
+
+            // File name + honest state line inside the well's top edge.
+            g.setColour (tokens::muted);
+            g.setFont (Fonts::make (9.5f, true));
+            g.drawText (snap->sampleFileName, plot.withHeight (12),
+                        juce::Justification::topLeft);
+
+            if (snap->samplePitchEnvelope)
+            {
+                g.setColour (tokens::red.withAlpha (0.9f));
+                g.setFont (Fonts::make (9.5f, false, true).withExtraKerningFactor (0.05f));
+                g.drawText ("PITCH ENVELOPE: " + snap->sampleStartNote + " > " + snap->sampleNote,
+                            plot.withHeight (12), juce::Justification::topRight);
+            }
+            else if (snap->sampleNoStableNote)
+            {
+                g.setColour (tokens::red.withAlpha (0.9f));
+                g.setFont (Fonts::make (9.5f, false, true).withExtraKerningFactor (0.05f));
+                g.drawText ("NO STABLE NOTE", plot.withHeight (12),
+                            juce::Justification::topRight);
+            }
+        }
+        else if (! demoDisplayMode())
+        {
+            g.setColour (tokens::muted2);
+            g.setFont (Fonts::make (12.0f, false, true).withExtraKerningFactor (0.06f));
+            g.drawText ("DROP 808 / SAMPLE HERE", plot, juce::Justification::centred);
+        }
+        else
+        {
+            // Demo shots keep the scripted 808 decay.
+            juce::Path wave;
+            wave.startNewSubPath ((float) plot.getX(), midY);
+            for (int i = 0; i <= 200; ++i)
+            {
+                const float t = (float) i / 200.0f;
+                const float x = (float) plot.getX() + t * (float) plot.getWidth();
+                const float env = std::exp (-t * 4.2f);
+                const float cycle = std::sin (t * 95.0f + (float) demoPhase * 0.35f)
+                                  + 0.35f * std::sin (t * 190.0f);
+                wave.lineTo (x, midY - cycle * env * (float) plot.getHeight() * 0.42f);
+            }
+            g.setColour (tokens::gold.withAlpha (0.9f));
+            g.strokePath (wave, juce::PathStrokeType (1.4f));
+            g.setColour (tokens::gold.withAlpha (0.25f));
+            g.strokePath (wave, juce::PathStrokeType (3.6f));
+            demoPhase += 0.15;
+        }
 
         // Frequency captions inside the well's bottom edge.
         static const char* freqs[] = { "20", "50", "100", "200", "500", "1k", "2k" };
@@ -233,13 +323,16 @@ private:
     void drawReadouts (juce::Graphics& g, juce::Rectangle<int> r,
                        const AnalysisSnapshot& snap)
     {
+        const bool haveSample = demoDisplayMode()
+                                  || (snap.hasSampleResult && ! snap.sampleNoStableNote);
+
         struct Cell { const char* label; juce::String big; juce::String small; };
         const int st = snap.sampleRecommendedSemitones;
         const int ft = juce::roundToInt (snap.sampleFineTuneCents);
         const Cell cells[3] = {
-            { "DETECTED SUSTAIN NOTE", snap.sampleNote, "" },
-            { "RECOMMENDED", (st > 0 ? "+" : "") + juce::String (st), "SEMITONE" },
-            { "FINE TUNE", (ft > 0 ? "+" : "") + juce::String (ft), "CENTS" },
+            { "DETECTED SUSTAIN NOTE", haveSample ? snap.sampleNote : "--", "" },
+            { "RECOMMENDED", haveSample ? (st > 0 ? "+" : "") + juce::String (st) : "--", "SEMITONE" },
+            { "FINE TUNE", haveSample ? (ft > 0 ? "+" : "") + juce::String (ft) : "--", "CENTS" },
         };
 
         // The first cell is wider in the mockup - its label is the long one.
@@ -291,6 +384,7 @@ private:
     KeyGloProcessor& processor;
     DemoFeed& demo;
     double demoPhase = 0.0;
+    bool dropHighlight = false;
 
     TunerDialComponent tuner;
     SkinButton applyButton { "Apply Tune", "apply_tune_219x31", {}, "tuning" };

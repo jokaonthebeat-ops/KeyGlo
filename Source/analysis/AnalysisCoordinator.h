@@ -18,7 +18,9 @@
 #include "BeatKeyDetector.h"
 #include "TempoDetector.h"
 #include "VocalEngine.h"
+#include "SamplePitchDetector.h"
 #include "../state/ArtistProfileStore.h"
+#include "../dsp/SamplePreviewPlayer.h"
 
 namespace keyglo
 {
@@ -55,6 +57,26 @@ public:
     }
 
     bool isBusy() const                 { return busy.load(); }
+
+    // --- 808 / sample side (milestone 4) ----------------------------------
+    void setPreviewPlayer (SamplePreviewPlayer* p)   { player = p; }
+
+    void analyseSampleAsync (const juce::File& file)
+    {
+        {
+            const juce::ScopedLock sl (jobLock);
+            pendingSample = file;
+            sampleRequested = true;
+        }
+        notify();
+    }
+
+    // Renders "<name> (KeyGlo tuned).wav" beside the analysed sample.
+    void applyTuneAsync()
+    {
+        applyRequested.store (true);
+        notify();
+    }
 
     // --- vocal side (milestone 3) -----------------------------------------
     VocalEngine& vocals()               { return vocal; }
@@ -119,8 +141,22 @@ private:
                 }
             }
 
+            juce::File sampleJob;
+            {
+                const juce::ScopedLock sl (jobLock);
+                if (sampleRequested)
+                {
+                    sampleJob = pendingSample;
+                    sampleRequested = false;
+                }
+            }
+
             if (fileJob != juce::File())
                 analyseFile (fileJob);
+            else if (sampleJob != juce::File())
+                analyseSample (sampleJob);
+            else if (applyRequested.exchange (false))
+                renderAppliedTune();
             else if (ringRequested.exchange (false))
                 analyseRing (true);
             else
@@ -384,6 +420,151 @@ private:
         busy.store (false);
     }
 
+    // ------------------------------------------------------------------
+    //  808 / sample pipeline
+    // ------------------------------------------------------------------
+    bool decodeMono (const juce::File& file, std::vector<float>& mono, double& rate)
+    {
+        std::unique_ptr<juce::AudioFormatReader> reader (formats.createReaderFor (file));
+        if (reader == nullptr || reader->lengthInSamples < 256)
+            return false;
+
+        const int numSamples = (int) juce::jmin<juce::int64> (reader->lengthInSamples,
+                                                              (juce::int64) (reader->sampleRate * 20.0));
+        juce::AudioBuffer<float> buffer ((int) reader->numChannels, numSamples);
+        reader->read (&buffer, 0, numSamples, 0, true, true);
+
+        mono.assign ((size_t) numSamples, 0.0f);
+        for (int ch = 0; ch < (int) reader->numChannels; ++ch)
+        {
+            const float* src = buffer.getReadPointer (ch);
+            for (int i = 0; i < numSamples; ++i)
+                mono[(size_t) i] += src[i] / (float) reader->numChannels;
+        }
+        rate = reader->sampleRate;
+        return true;
+    }
+
+    void analyseSample (const juce::File& file)
+    {
+        busy.store (true);
+
+        double rate = 48000.0;
+        if (! decodeMono (file, sampleAudio, rate))
+        {
+            auto next = std::make_shared<AnalysisSnapshot> (*model.get());
+            next->hasSampleResult = true;
+            next->sampleNoStableNote = true;
+            next->sampleFileName = file.getFileName();
+            next->sampleTunedReady = false;
+            next->appliedTunePath = "";
+            model.publish (std::move (next));
+            busy.store (false);
+            return;
+        }
+        sampleAudioRate = rate;
+        sampleFile = file;
+
+        auto current = model.get();
+        const bool haveScale = current->hasBeatResult && ! current->noReliableKey;
+        const auto tune = SamplePitchDetector::analyse (sampleAudio.data(),
+                                                        (int) sampleAudio.size(), rate,
+                                                        current->scaleNotes, haveScale);
+        lastTune = tune;
+
+        auto next = std::make_shared<AnalysisSnapshot> (*current);
+        next->hasSampleResult = true;
+        next->sampleFileName = file.getFileName();
+        next->appliedTunePath = "";
+        SamplePitchDetector::envelope<240> (sampleAudio.data(),
+                                            (int) sampleAudio.size(), next->sampleWaveform);
+
+        if (tune.valid)
+        {
+            next->sampleNoStableNote = false;
+            next->samplePitchEnvelope = tune.pitchEnvelope;
+            next->sampleNote = tune.noteName();
+            next->sampleStartNote = tune.pitchEnvelope ? tune.startNoteName() : juce::String();
+            next->sampleRecommendedSemitones = tune.recommendedSemitones;
+            next->sampleFineTuneCents = tune.fineTuneCents;
+            next->sampleDeviationCents = tune.deviationCents;
+            next->sampleConfidence = tune.confidence;
+
+            // Tuned audition buffer for SOLO.
+            next->sampleTunedReady = renderTunedBuffer (tune.totalShiftSemitones, rate);
+        }
+        else
+        {
+            next->sampleNoStableNote = true;
+            next->samplePitchEnvelope = false;
+            next->sampleTunedReady = false;
+            if (player != nullptr)
+                player->clear();
+        }
+
+        model.publish (std::move (next));
+        busy.store (false);
+    }
+
+    // Repitch by resampling (the one-shot workflow: length changes, the
+    // texture stays honest) through a Lagrange interpolator.
+    static void repitch (const std::vector<float>& in, double shiftSemitones,
+                         juce::AudioBuffer<float>& out)
+    {
+        const double speed = std::pow (2.0, shiftSemitones / 12.0);
+        const int outLength = juce::jmax (16, (int) ((double) in.size() / speed));
+        out.setSize (1, outLength);
+
+        juce::LagrangeInterpolator interp;
+        interp.reset();
+        interp.process (speed, in.data(), out.getWritePointer (0), outLength,
+                        (int) in.size(), 0);
+    }
+
+    bool renderTunedBuffer (float shiftSemitones, double rate)
+    {
+        if (player == nullptr || sampleAudio.empty())
+            return false;
+        juce::AudioBuffer<float> tuned;
+        repitch (sampleAudio, shiftSemitones, tuned);
+        player->install (tuned, rate);
+        return true;
+    }
+
+    void renderAppliedTune()
+    {
+        if (! lastTune.valid || sampleAudio.empty() || sampleFile == juce::File())
+            return;
+
+        busy.store (true);
+        juce::AudioBuffer<float> tuned;
+        repitch (sampleAudio, lastTune.totalShiftSemitones, tuned);
+
+        auto out = sampleFile.getSiblingFile (
+            sampleFile.getFileNameWithoutExtension() + " (KeyGlo tuned).wav");
+        out.deleteFile();
+
+        bool ok = false;
+        {
+            juce::WavAudioFormat wav;
+            auto stream = out.createOutputStream();
+            std::unique_ptr<juce::AudioFormatWriter> writer (
+                stream != nullptr ? wav.createWriterFor (stream.get(), sampleAudioRate,
+                                                         1, 24, {}, 0)
+                                  : nullptr);
+            if (writer != nullptr)
+            {
+                stream.release();
+                ok = writer->writeFromAudioSampleBuffer (tuned, 0, tuned.getNumSamples());
+            }
+        }
+
+        auto next = std::make_shared<AnalysisSnapshot> (*model.get());
+        next->appliedTunePath = ok ? out.getFullPathName() : juce::String();
+        model.publish (std::move (next));
+        busy.store (false);
+    }
+
     void publishAnalyzing (const juce::String& source)
     {
         auto next = std::make_shared<AnalysisSnapshot> (*model.get());
@@ -464,9 +645,15 @@ private:
     juce::AudioFormatManager formats;
 
     juce::CriticalSection jobLock;
-    juce::File pendingFile;
-    bool fileRequested = false;
-    std::atomic<bool> ringRequested { false };
+    juce::File pendingFile, pendingSample;
+    bool fileRequested = false, sampleRequested = false;
+    std::atomic<bool> ringRequested { false }, applyRequested { false };
+
+    SamplePreviewPlayer* player = nullptr;
+    std::vector<float> sampleAudio;
+    double sampleAudioRate = 48000.0;
+    juce::File sampleFile;
+    SampleTuneResult lastTune;
     std::atomic<bool> busy { false };
     std::atomic<float> hostBpm { 0.0f };
     std::atomic<bool> hostPlaying { false };
