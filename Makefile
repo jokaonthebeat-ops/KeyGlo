@@ -466,7 +466,7 @@ video: $(TOOLS)/makevideo
 .PHONY: video-web
 video-web: $(TOOLS)/makevideo
 	@mkdir -p $(ROOT)/marketing
-	@cd $(ROOT)/marketing && $(TOOLS)/makevideo KeyGlo-demo-web.mp4 $(if $(BEAT),"$(BEAT)","") 0 5
+	@cd $(ROOT)/marketing && $(TOOLS)/makevideo KeyGlo-demo-web.mp4 $(if $(BEAT),"$(BEAT)") bitrate=5
 
 # The vertical cut: 1080x1920, 51 s, for Reels / Shorts / TikTok.
 # BEAT is quoted separately from ARGS because ARGS is word-split by the shell
@@ -482,7 +482,7 @@ reel: $(TOOLS)/makevideo
 reel-web: $(TOOLS)/makevideo
 	@mkdir -p $(ROOT)/marketing
 	@cd $(ROOT)/marketing && $(TOOLS)/makevideo reel KeyGlo-reel-web.mp4 \
-	   $(if $(BEAT),"$(BEAT)") $(if $(BEAT),0) 5
+	   $(if $(BEAT),"$(BEAT)") bitrate=5
 
 $(TOOLS)/dsptest: $(PLUG_OBJS) $(ROOT)/tools/DspTest.cpp $(ROOT)/JucePluginDefines.h
 	@mkdir -p $(TOOLS)
