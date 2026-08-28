@@ -244,6 +244,21 @@ bool KeyGloEditor::keyPressed (const juce::KeyPress& key)
     return false;
 }
 
+void KeyGloEditor::hoverBeatDrop (bool hovering)
+{
+    // The same calls a real drag makes - no separate "demo" appearance that
+    // could drift from what a user actually sees.
+    if (hovering)
+        content->beat.fileDragEnter ({}, 0, 0);
+    else
+        content->beat.fileDragExit ({});
+}
+
+void KeyGloEditor::dropBeatFile (const juce::File& file)
+{
+    content->beat.filesDropped ({ file.getFullPathName() }, 0, 0);
+}
+
 void KeyGloEditor::refreshDisplays()
 {
     headlessRefreshMode() = true;

@@ -633,6 +633,7 @@ int main (int argc, char** argv)
         // audio path. That is exactly how the first web renders failed.
         juce::StringArray args;
         double bitrateFlag = 0.0;
+        juce::String vocalPath;
         for (int i = 1; i < argc; ++i)
         {
             const juce::String a { argv[i] };
@@ -640,6 +641,8 @@ int main (int argc, char** argv)
                 reelMode = true;
             else if (a.startsWithIgnoreCase ("bitrate="))
                 bitrateFlag = a.fromFirstOccurrenceOf ("=", false, false).getDoubleValue();
+            else if (a.startsWithIgnoreCase ("vocal="))
+                vocalPath = a.fromFirstOccurrenceOf ("=", false, false);
             else if (a.isNotEmpty())
                 args.add (a);
         }
@@ -674,6 +677,23 @@ int main (int argc, char** argv)
             return 1;
         }
 
+        // The acapella. Mixed OVER the instrumental so the plugin's input is
+        // vocal-dominant: that is what a producer actually inserts KeyGlo on
+        // (the vocal track) while the beat comes in as a dropped file, and it
+        // is what gives ARTIST RANGE real pitch motion instead of a pitch
+        // tracker chasing a bass line.
+        std::unique_ptr<juce::AudioFormatReader> vocalReader;
+        if (vocalPath.isNotEmpty())
+        {
+            const juce::File vf { vocalPath };
+            if (vf.existsAsFile())
+                vocalReader.reset (formats.createReaderFor (vf));
+            if (vocalReader == nullptr)
+                std::printf ("could not read vocal: %s\n", vocalPath.toRawUTF8());
+            else
+                std::printf ("vocal: %s\n", vf.getFileName().toRawUTF8());
+        }
+
         const bool haveMusic = reader != nullptr;
         const double sr = haveMusic ? reader->sampleRate : 48000.0;
         const int blockSize = (int) std::llround (sr / fps);
@@ -700,19 +720,11 @@ int main (int argc, char** argv)
         // must show KeyGlo reading the music the viewer is hearing, not a
         // synthetic stand-in with a different key.
         const juce::File beatForAnalysis = haveMusic ? sourceAudio : fixtures.beat;
-        processor.analyseFileAsync (beatForAnalysis);
-        for (int i = 0; i < 400; ++i)
-        {
-            auto snap = processor.getDisplayModel().get();
-            if (snap->hasBeatResult && ! snap->analyzing)
-                break;
-            juce::Thread::sleep (25);
-        }
-        {
-            auto snap = processor.getDisplayModel().get();
-            std::printf ("beat analysed: %s %s, %.0f BPM\n",
-                         snap->key.toRawUTF8(), snap->scale.toRawUTF8(), snap->bpm);
-        }
+
+        // Deliberately NOT analysed here. The film performs the drop on
+        // camera through the panel's real drag-and-drop path, so the beat
+        // panel starts genuinely empty and the reveal is the feature working
+        // rather than a finished result fading in.
 
         // The profile is NOT set here: the film installs it when the
         // profiling act runs, so the artist panel is genuinely empty before
@@ -756,16 +768,29 @@ int main (int argc, char** argv)
 
             { 11.0, 21.0, "Drop the beat",
               "Key, scale, tempo and tuning - read from the audio",
-              [&beatForAnalysis] (KeyGloProcessor& p, KeyGloEditor&, double progress)
+              [&beatForAnalysis] (KeyGloProcessor& p, KeyGloEditor& e, double progress)
               {
-                  // Re-analysing on screen shows the ANALYZING state resolve
-                  // into a real verdict rather than cutting to a finished one.
-                  if (progress < 0.02)
-                      p.analyseFileAsync (beatForAnalysis);
+                  // The real gesture: the zone lights under the drag, then
+                  // the drop starts the analysis and ANALYZING resolves into
+                  // the verdict on screen.
+                  static bool dropped = false;
+                  if (progress < 0.04)
+                  {
+                      dropped = false;
+                      e.hoverBeatDrop (true);
+                  }
+                  else if (progress >= 0.18 && ! dropped)
+                  {
+                      dropped = true;
+                      e.hoverBeatDrop (false);
+                      e.dropBeatFile (beatForAnalysis);
+                      p.setAutoAnalysisEnabled (true);
+                  }
               } },
 
-            { 21.0, 29.0, "No reliable key beats a wrong one",
-              "Sparse or tuneless material says so instead of guessing", nullptr },
+            { 21.0, 29.0, "Every note that fits",
+              "The note map and the allowed notes light up in the detected key",
+              nullptr },
 
             { 29.0, 41.0, "Profile the artist",
               "Four sung prompts map comfortable, strong and extended range",
@@ -810,10 +835,21 @@ int main (int argc, char** argv)
 
             { 3.2, 10.5, "What key is this beat?",
               "Drop it in. Read it in seconds.",
-              [&beatForAnalysis] (KeyGloProcessor& p, KeyGloEditor&, double progress)
+              [&beatForAnalysis] (KeyGloProcessor& p, KeyGloEditor& e, double progress)
               {
-                  if (progress < 0.03)
-                      p.analyseFileAsync (beatForAnalysis);
+                  static bool reelDropped = false;
+                  if (progress < 0.06)
+                  {
+                      reelDropped = false;
+                      e.hoverBeatDrop (true);
+                  }
+                  else if (progress >= 0.22 && ! reelDropped)
+                  {
+                      reelDropped = true;
+                      e.hoverBeatDrop (false);
+                      e.dropBeatFile (beatForAnalysis);
+                      p.setAutoAnalysisEnabled (true);
+                  }
               },
               { 15.0f, 91.0f, 360.0f, 460.0f } },          // beat panel
 
@@ -908,6 +944,13 @@ int main (int argc, char** argv)
         [writer startSessionAtSourceTime: kCMTimeZero];
 
         // --- render ------------------------------------------------------------
+        // Music plays from the first frame. The beat panel still stays empty
+        // until the drop because the automatic live analysis is held off
+        // until then (re-enabled by the drop act), rather than by starving
+        // the plugin of audio.
+        processor.setAutoAnalysisEnabled (false);
+        juce::AudioBuffer<float> vocalMix (2, blockSize);
+
         FilmAudio filmAudio (fixtures, sr);
         // Acts whose input is the sung hook / the 808 rather than the beat.
         if (reelMode) filmAudio.setActBounds (10.5, 26.0, 33.5, 42.0);
@@ -966,6 +1009,23 @@ int main (int argc, char** argv)
                 if (readPos + blockSize >= reader->lengthInSamples)
                     readPos = 0;
                 reader->read (&audio, 0, blockSize, readPos, true, true);
+
+                // Acapella over the instrumental. The vocal sits on top and
+                // the beat is pulled down, so the pitch tracker follows the
+                // voice (ARTIST RANGE shows real vocal motion) while the
+                // soundtrack is still the song.
+                if (vocalReader != nullptr)
+                {
+                    audio.applyGain (0.55f);
+                    vocalMix.setSize (audio.getNumChannels(), blockSize, false, false, true);
+                    if (readPos + blockSize >= vocalReader->lengthInSamples)
+                        vocalMix.clear();
+                    else
+                        vocalReader->read (&vocalMix, 0, blockSize, readPos, true, true);
+                    for (int ch = 0; ch < audio.getNumChannels(); ++ch)
+                        audio.addFrom (ch, 0, vocalMix, juce::jmin (ch, vocalMix.getNumChannels() - 1),
+                                       0, blockSize, 1.0f);
+                }
                 readPos += blockSize;
             }
             else

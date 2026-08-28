@@ -39,6 +39,13 @@ public:
     // Drives every display timer once, synchronously - used by make uishot.
     void refreshDisplays();
 
+    // Drives the REAL drag-and-drop path on the beat panel, so the demo film
+    // shows the feature working rather than a result appearing from nowhere:
+    // hoverBeatDrop() lights the drop zone exactly as a dragged file does,
+    // dropBeatFile() performs the drop and starts the analysis.
+    void hoverBeatDrop (bool hovering);
+    void dropBeatFile (const juce::File& file);
+
 private:
     class ContentComponent;
     class DebugOverlay;

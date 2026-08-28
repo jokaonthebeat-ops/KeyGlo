@@ -460,7 +460,7 @@ $(TOOLS)/makevideo: $(PLUG_OBJS) $(ROOT)/tools/MakeVideo.cpp $(ROOT)/JucePluginD
 video: $(TOOLS)/makevideo
 	@mkdir -p $(ROOT)/marketing
 	@cd $(ROOT)/marketing && $(TOOLS)/makevideo KeyGlo-demo.mp4 \
-	   $(if $(BEAT),"$(BEAT)",$(ARGS))
+	   $(if $(BEAT),"$(BEAT)",$(ARGS)) $(if $(VOCAL),vocal="$(VOCAL)")
 
 # The same film at a web bitrate, for upload.
 .PHONY: video-web
@@ -477,7 +477,7 @@ BEAT ?=
 reel: $(TOOLS)/makevideo
 	@mkdir -p $(ROOT)/marketing
 	@cd $(ROOT)/marketing && $(TOOLS)/makevideo reel KeyGlo-reel.mp4 \
-	   $(if $(BEAT),"$(BEAT)") $(if $(BEAT),0) $(if $(BEAT),14)
+	   $(if $(BEAT),"$(BEAT)") $(if $(VOCAL),vocal="$(VOCAL)")
 
 reel-web: $(TOOLS)/makevideo
 	@mkdir -p $(ROOT)/marketing

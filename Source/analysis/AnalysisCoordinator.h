@@ -58,6 +58,12 @@ public:
 
     bool isBusy() const                 { return busy.load(); }
 
+    // Automatic re-analysis of the live ring. On by default; the demo film
+    // holds it off until the beat is dropped on camera so that music can play
+    // under the opening titles without a live verdict appearing before the
+    // drop. A dropped FILE result already suppresses it permanently.
+    void setAutoAnalysisEnabled (bool shouldRun)  { autoAnalysis.store (shouldRun); }
+
     // --- 808 / sample side (milestone 4) ----------------------------------
     void setPreviewPlayer (SamplePreviewPlayer* p)   { player = p; }
 
@@ -171,7 +177,8 @@ private:
                 const auto written = ring.samplesWritten();
                 const auto now = juce::Time::currentTimeMillis();
                 const bool freshAudio = written > lastSeen + (juce::int64) (ring.sampleRate() * 2.0);
-                if (! fileResultStands && freshAudio && now - lastAutoAnalyse > 3000
+                if (autoAnalysis.load() && ! fileResultStands && freshAudio
+                     && now - lastAutoAnalyse > 3000
                      && written > (juce::int64) (ring.sampleRate() * 6.0))
                 {
                     lastAutoAnalyse = now;
@@ -648,6 +655,7 @@ private:
     juce::File pendingFile, pendingSample;
     bool fileRequested = false, sampleRequested = false;
     std::atomic<bool> ringRequested { false }, applyRequested { false };
+    std::atomic<bool> autoAnalysis { true };
 
     SamplePreviewPlayer* player = nullptr;
     std::vector<float> sampleAudio;

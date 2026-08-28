@@ -77,6 +77,7 @@ public:
     void analyseFileAsync (const juce::File& f)            { coordinator->analyseFileAsync (f); }
     void analyseCaptureNow()                               { coordinator->analyseRingNow(); }
     bool isAnalysisBusy() const                            { return coordinator->isBusy(); }
+    void setAutoAnalysisEnabled (bool e)                   { coordinator->setAutoAnalysisEnabled (e); }
 
     // Presets + undo (product milestone). Message thread only.
     PresetManager& getPresets()                            { return *presets; }
