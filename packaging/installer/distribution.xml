@@ -45,8 +45,8 @@
         <pkg-ref id="com.diamondloopz.keyglo.app"/>
     </choice>
 
-    <pkg-ref id="com.diamondloopz.keyglo.vst3" version="0.9.5" onConclusion="none">KeyGlo-VST3.pkg</pkg-ref>
-    <pkg-ref id="com.diamondloopz.keyglo.au"   version="0.9.5" onConclusion="none">KeyGlo-AU.pkg</pkg-ref>
-    <pkg-ref id="com.diamondloopz.keyglo.app"  version="0.9.5" onConclusion="none">KeyGlo-App.pkg</pkg-ref>
+    <pkg-ref id="com.diamondloopz.keyglo.vst3" version="0.9.6" onConclusion="none">KeyGlo-VST3.pkg</pkg-ref>
+    <pkg-ref id="com.diamondloopz.keyglo.au"   version="0.9.6" onConclusion="none">KeyGlo-AU.pkg</pkg-ref>
+    <pkg-ref id="com.diamondloopz.keyglo.app"  version="0.9.6" onConclusion="none">KeyGlo-App.pkg</pkg-ref>
 
 </installer-gui-script>

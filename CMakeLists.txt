@@ -16,7 +16,7 @@
 # -----------------------------------------------------------------------------
 
 cmake_minimum_required(VERSION 3.22)
-project(KeyGlo VERSION 0.9.5 LANGUAGES C CXX)
+project(KeyGlo VERSION 0.9.6 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

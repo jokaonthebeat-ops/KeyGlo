@@ -1,4 +1,4 @@
-KeyGlo 0.9.5
+KeyGlo 0.9.6
 Artist-to-Beat Key Matching
 Diamond Loopz
 

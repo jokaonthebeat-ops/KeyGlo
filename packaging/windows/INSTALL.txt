@@ -1,4 +1,4 @@
-KeyGlo 0.9.5 for Windows
+KeyGlo 0.9.6 for Windows
 Artist-to-Beat Key Matching
 Diamond Loopz
 
